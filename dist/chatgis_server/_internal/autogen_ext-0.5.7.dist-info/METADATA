@@ -1,0 +1,135 @@
+Metadata-Version: 2.4
+Name: autogen-ext
+Version: 0.5.7
+Summary: AutoGen extensions library
+License:     MIT License
+        
+            Copyright (c) Microsoft Corporation.
+        
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+        
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+        
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE
+License-File: LICENSE-CODE
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Requires-Python: >=3.10
+Requires-Dist: autogen-core==0.5.7
+Provides-Extra: anthropic
+Requires-Dist: anthropic>=0.48; extra == 'anthropic'
+Provides-Extra: azure
+Requires-Dist: azure-ai-inference>=1.0.0b7; extra == 'azure'
+Requires-Dist: azure-ai-projects>=1.0.0b8; extra == 'azure'
+Requires-Dist: azure-core; extra == 'azure'
+Requires-Dist: azure-identity; extra == 'azure'
+Requires-Dist: azure-search-documents>=11.4.0; extra == 'azure'
+Provides-Extra: canvas
+Requires-Dist: unidiff>=0.7.5; extra == 'canvas'
+Provides-Extra: chromadb
+Requires-Dist: chromadb>=1.0.0; extra == 'chromadb'
+Provides-Extra: diskcache
+Requires-Dist: diskcache>=5.6.3; extra == 'diskcache'
+Provides-Extra: docker
+Requires-Dist: asyncio-atexit>=1.0.1; extra == 'docker'
+Requires-Dist: docker~=7.0; extra == 'docker'
+Provides-Extra: docker-jupyter-executor
+Requires-Dist: aiohttp>=3.11.16; extra == 'docker-jupyter-executor'
+Requires-Dist: asyncio-atexit>=1.0.1; extra == 'docker-jupyter-executor'
+Requires-Dist: docker~=7.0; extra == 'docker-jupyter-executor'
+Requires-Dist: requests>=2.32.3; extra == 'docker-jupyter-executor'
+Requires-Dist: websockets>=15.0.1; extra == 'docker-jupyter-executor'
+Provides-Extra: file-surfer
+Requires-Dist: autogen-agentchat==0.5.7; extra == 'file-surfer'
+Requires-Dist: magika>=0.6.1rc2; extra == 'file-surfer'
+Requires-Dist: markitdown[all]~=0.1.0a3; extra == 'file-surfer'
+Provides-Extra: gemini
+Requires-Dist: google-genai>=1.0.0; extra == 'gemini'
+Provides-Extra: graphrag
+Requires-Dist: graphrag>=1.0.1; extra == 'graphrag'
+Provides-Extra: grpc
+Requires-Dist: grpcio~=1.70.0; extra == 'grpc'
+Provides-Extra: http-tool
+Requires-Dist: httpx>=0.27.0; extra == 'http-tool'
+Requires-Dist: json-schema-to-pydantic>=0.2.0; extra == 'http-tool'
+Provides-Extra: jupyter-executor
+Requires-Dist: ipykernel>=6.29.5; extra == 'jupyter-executor'
+Requires-Dist: nbclient>=0.10.2; extra == 'jupyter-executor'
+Provides-Extra: langchain
+Requires-Dist: langchain-core~=0.3.3; extra == 'langchain'
+Provides-Extra: llama-cpp
+Requires-Dist: llama-cpp-python>=0.3.8; extra == 'llama-cpp'
+Provides-Extra: magentic-one
+Requires-Dist: autogen-agentchat==0.5.7; extra == 'magentic-one'
+Requires-Dist: magika>=0.6.1rc2; extra == 'magentic-one'
+Requires-Dist: markitdown[all]~=0.1.0a3; extra == 'magentic-one'
+Requires-Dist: pillow>=11.0.0; extra == 'magentic-one'
+Requires-Dist: playwright>=1.48.0; extra == 'magentic-one'
+Provides-Extra: mcp
+Requires-Dist: mcp>=1.6.0; extra == 'mcp'
+Provides-Extra: ollama
+Requires-Dist: ollama>=0.4.7; extra == 'ollama'
+Requires-Dist: tiktoken>=0.8.0; extra == 'ollama'
+Provides-Extra: openai
+Requires-Dist: aiofiles; extra == 'openai'
+Requires-Dist: openai>=1.66.5; extra == 'openai'
+Requires-Dist: tiktoken>=0.8.0; extra == 'openai'
+Provides-Extra: redis
+Requires-Dist: redis>=5.2.1; extra == 'redis'
+Provides-Extra: rich
+Requires-Dist: rich>=13.9.4; extra == 'rich'
+Provides-Extra: semantic-kernel-all
+Requires-Dist: semantic-kernel[anthropic,aws,dapr,google,hugging-face,mistralai,ollama,onnx,pandas,usearch]>=1.17.1; extra == 'semantic-kernel-all'
+Provides-Extra: semantic-kernel-anthropic
+Requires-Dist: semantic-kernel[anthropic]>=1.17.1; extra == 'semantic-kernel-anthropic'
+Provides-Extra: semantic-kernel-aws
+Requires-Dist: semantic-kernel[aws]>=1.17.1; extra == 'semantic-kernel-aws'
+Provides-Extra: semantic-kernel-core
+Requires-Dist: semantic-kernel>=1.17.1; extra == 'semantic-kernel-core'
+Provides-Extra: semantic-kernel-dapr
+Requires-Dist: semantic-kernel[dapr]>=1.17.1; extra == 'semantic-kernel-dapr'
+Provides-Extra: semantic-kernel-google
+Requires-Dist: semantic-kernel[google]>=1.17.1; extra == 'semantic-kernel-google'
+Provides-Extra: semantic-kernel-hugging-face
+Requires-Dist: semantic-kernel[hugging-face]>=1.17.1; extra == 'semantic-kernel-hugging-face'
+Provides-Extra: semantic-kernel-mistralai
+Requires-Dist: semantic-kernel[mistralai]>=1.17.1; extra == 'semantic-kernel-mistralai'
+Provides-Extra: semantic-kernel-ollama
+Requires-Dist: semantic-kernel[ollama]>=1.17.1; extra == 'semantic-kernel-ollama'
+Provides-Extra: semantic-kernel-onnx
+Requires-Dist: semantic-kernel[onnx]>=1.17.1; extra == 'semantic-kernel-onnx'
+Provides-Extra: semantic-kernel-pandas
+Requires-Dist: semantic-kernel[pandas]>=1.17.1; extra == 'semantic-kernel-pandas'
+Provides-Extra: task-centric-memory
+Requires-Dist: chromadb>=1.0.0; extra == 'task-centric-memory'
+Provides-Extra: video-surfer
+Requires-Dist: autogen-agentchat==0.5.7; extra == 'video-surfer'
+Requires-Dist: ffmpeg-python; extra == 'video-surfer'
+Requires-Dist: openai-whisper; extra == 'video-surfer'
+Requires-Dist: opencv-python>=4.5; extra == 'video-surfer'
+Provides-Extra: web-surfer
+Requires-Dist: autogen-agentchat==0.5.7; extra == 'web-surfer'
+Requires-Dist: magika>=0.6.1rc2; extra == 'web-surfer'
+Requires-Dist: markitdown[all]~=0.1.0a3; extra == 'web-surfer'
+Requires-Dist: pillow>=11.0.0; extra == 'web-surfer'
+Requires-Dist: playwright>=1.48.0; extra == 'web-surfer'
+Description-Content-Type: text/markdown
+
+# AutoGen Extensions
+
+- [Documentation](https://microsoft.github.io/autogen/stable/user-guide/extensions-user-guide/index.html)
+
+AutoGen is designed to be extensible. The `autogen-ext` package contains many different component implementations maintained by the AutoGen project. However, we strongly encourage others to build their own components and publish them as part of the ecosytem.
