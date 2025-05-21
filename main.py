@@ -39,6 +39,8 @@ async def chat(q: str):
     response = await handle_chat(q)  # 调用 handle_chat 获取最终响应
     return {"response": response}
 
+
+
 # 启动服务
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

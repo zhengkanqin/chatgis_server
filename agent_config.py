@@ -1,22 +1,28 @@
 # backend/agent_config.py
-
+import json
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 import FunctionCallList
+
+
+with open('config.json', 'r', encoding='utf-8') as configFile:
+    config = json.load(configFile)
+
+
 model_info = {
     "name": "deepseek-chat",
     "parameters": {"max_tokens": 2048, "temperature": 0.4, "top_p": 0.9},
     "family": "gpt-4o",
-    "vision": False,
+    "vision": True,
     "json_output": True,
     "function_calling": True,
     "structured_output": True,
 }
 
 model_client = OpenAIChatCompletionClient(
-    model="deepseek-chat",
-    base_url="https://api.deepseek.com",
-    api_key="sk-00d80e327eed4b40952e5ab249398eac",
+    model=config["对话大模型名称"],
+    base_url=config["对话大模型地址"],
+    api_key=config["对话大模型密钥"],
     model_info=model_info,
 )
 
