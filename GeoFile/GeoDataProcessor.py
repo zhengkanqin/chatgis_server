@@ -245,7 +245,7 @@ async def process_geo_data_file(
             f"{analysis['file_info']['coordinates_range']['max_lon']:.4f}",
             f"    - 纬度：{analysis['file_info']['coordinates_range']['min_lat']:.4f} ~ "
             f"{analysis['file_info']['coordinates_range']['max_lat']:.4f}",
-            "  - 属性字段分析："
+            "  - 属性字段："
         ]
 
         # 添加字段信息

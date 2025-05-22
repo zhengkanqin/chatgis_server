@@ -138,7 +138,7 @@ async def read_shp_file( file_path:str ):
             "  - 坐标范围：",
             f"    - 经度：{summary['file_info']['coord_range']['min_lon']:.4f} ~ {summary['file_info']['coord_range']['max_lon']:.4f}",
             f"    - 纬度：{summary['file_info']['coord_range']['min_lat']:.4f} ~ {summary['file_info']['coord_range']['max_lat']:.4f}",
-            "  - 属性字段分析："
+            "  - 属性字段："
         ]
 
         # 添加字段详细信息
