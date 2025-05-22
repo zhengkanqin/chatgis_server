@@ -278,7 +278,7 @@ async def process_geo_data_file(
 
         logging.info(f"地理数据处理摘要：{json.dumps(analysis, indent=2)}")
 
-        return {"status": "success", "data": analysis}
+        return {"status": "success", "data": result_msg}
 
     except Exception as e:
         error_msg = f"文件处理失败：{str(e)}"
