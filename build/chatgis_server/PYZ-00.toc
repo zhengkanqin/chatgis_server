@@ -1,6 +1,6 @@
 ('D:\\Temp\\chatgis_server\\build\\chatgis_server\\PYZ-00.pyz',
- [('FunctionCallList',
-   'D:\\Temp\\chatgis_server\\FunctionCallList.py',
+ [('FunctionCall_List',
+   'D:\\Temp\\chatgis_server\\FunctionCall_List.py',
    'PYMODULE'),
   ('PIL',
    'C:\\Users\\Administrator\\PyCharmMiscProject\\.venv\\Lib\\site-packages\\PIL\\__init__.py',
