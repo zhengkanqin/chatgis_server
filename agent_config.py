@@ -37,3 +37,7 @@ agent = AssistantAgent(
     model_client_stream=True,
 )
 
+
+GeoFile_Agent= AssistantAgent(
+    name="assistant_GeoFile"
+)

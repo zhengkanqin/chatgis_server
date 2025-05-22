@@ -1,6 +1,10 @@
-import json
+import asyncio
+from GeoFile.ShpProcessor import read_shp_file
 
-with open('config.json', 'r') as configFile:
-    config = json.load(configFile)
-    print(config['AgentKey'])
-# 文件在退出 with 块后自动关闭
+
+async def main():
+    abc = await read_shp_file("D:/Temp/data/china/单线铁路.shp")
+    print(abc)
+
+if __name__ == "__main__":
+    asyncio.run(main())
