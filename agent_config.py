@@ -38,6 +38,3 @@ agent = AssistantAgent(
 )
 
 
-GeoFile_Agent= AssistantAgent(
-    name="assistant_GeoFile"
-)
