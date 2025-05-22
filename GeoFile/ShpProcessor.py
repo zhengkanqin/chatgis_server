@@ -173,7 +173,7 @@ async def read_shp_file( file_path:str ):
         # 记录原始数据
         logging.info(f"SHP处理原始数据：{json.dumps(summary, indent=2)}")
 
-        return {"status": "success", "data": summary}
+        return result_msg
 
     except Exception as e:
         error_msg = f"处理shp文件时发生错误：{str(e)}"
