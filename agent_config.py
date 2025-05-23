@@ -2,8 +2,8 @@
 import json
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-import FunctionCall_List
-
+from FunctionCall_List import draw_boundary_tool
+from GeoFile.ShpProcessor import read_shp_tool
 
 with open('config.json', 'r', encoding='utf-8') as configFile:
     config = json.load(configFile)
@@ -32,10 +32,9 @@ agent = AssistantAgent(
     name="assistant",
     model_client=model_client,
     system_message="你的名字是GIS助手，你需要提供地理信息相关的服务，并尽可能的让用户详细理解。如果用户需要介绍地方，能绘制地图则调用绘制地图的工具",
-    tools=[FunctionCall_List.draw_boundary_tool],
+    tools=[draw_boundary_tool,read_shp_tool],
     reflect_on_tool_use=True,
     model_client_stream=True,
 )
 
 
-print(1234)
