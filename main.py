@@ -1,7 +1,6 @@
 # backend/main.py
 import sys
 import io
-from typing import AsyncGenerator
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
@@ -11,7 +10,7 @@ from chat_handler import handle_chat
 from connection_manager import manager
 from fastapi.responses import StreamingResponse
 import uvicorn
-
+from agent_config import agent
 app = FastAPI()
 
 # CORS 中间件设置
@@ -42,7 +41,17 @@ async def chat(q: str):
     response = await handle_chat(q)  # 调用 handle_chat 获取最终响应
     return {"response": response}
 
-
+@app.get("/chat_stream")
+async def chat_stream(q: str):
+    async def generate():
+        async for chunk in agent.run_stream(task=q):
+            if hasattr(chunk, 'content'):
+                yield f"data: {chunk.content}\n\n"
+            elif hasattr(chunk, 'messages'):
+                for message in chunk.messages:
+                    if hasattr(message, 'content'):
+                        yield f"data: {message.content}\n\n"
+    return StreamingResponse(generate(),media_type="text/event-stream")
 
 # 启动服务
 if __name__ == "__main__":
