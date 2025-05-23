@@ -1,12 +1,15 @@
 # backend/main.py
 import sys
 import io
+from typing import AsyncGenerator
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from chat_handler import handle_chat
 from connection_manager import manager
+from fastapi.responses import StreamingResponse
 import uvicorn
 
 app = FastAPI()

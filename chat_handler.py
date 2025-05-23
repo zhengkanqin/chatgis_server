@@ -1,4 +1,6 @@
 # chat_handler.py
+from typing import AsyncGenerator
+
 from agent_config import agent
 import json
 async def handle_chat(q: str) -> str:
