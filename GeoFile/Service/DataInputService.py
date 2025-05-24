@@ -1,4 +1,6 @@
 # GeoFile/Service/DataInputService.py
+import logging
+
 from autogen_core.tools import FunctionTool
 from GeoFile.Processors.DataInputProcessor import FileProcessorFactory
 

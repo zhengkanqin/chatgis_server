@@ -79,14 +79,21 @@ class ValueErrorHandler(BaseErrorHandler):
     ERROR_TYPE = ValueError
 
     def build_error_info(self):
+        error_msg = str(self.error_obj).lower()
+        reasons = []
+        solutions = []
+
+        if "1" in error_msg:
+            reasons.append("未检测到经纬度字段")
+            solutions.append("请明确指定列名/索引")
+        elif "2" in error_msg:
+            reasons.append("该文件类型是暂不支持的文件类型")
+            solutions.append("尝试更换为shp/txt/excel数据重新上传")
+
         self.error_info.update({
-            "原因": "文件类型不支持",
-            "技术诊断": [
-                "该文件类型是暂不支持的文件类型"
-            ],
-            "修复建议": [
-                "尝试更换为shp/txt/excel数据重新上传"
-            ]
+            "原因": "文件重要值错误",
+            "技术诊断": reasons,
+            "修复建议": solutions
         })
 
 

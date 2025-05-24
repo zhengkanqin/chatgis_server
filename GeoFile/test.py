@@ -4,7 +4,7 @@ from GeoFile.Service.DataInputService import read_file
 
 
 async def main():
-    abc = await read_file("GeoFile/AAATestFile/Shp/防火站.shp")
+    abc = await read_file("GeoFile/AAATestFile/Excel/level1_标准表头.xlsx")
     print(abc)
 
 if __name__ == "__main__":
