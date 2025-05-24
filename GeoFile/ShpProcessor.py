@@ -378,5 +378,5 @@ def format_crs_error(file_path, error_info):
 read_tool = FunctionTool(
     read_shp_file,
     name="read_shapefile",
-    description="读取并解析地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息",
+    description="读取并解析shapefile地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息，并将分析结果发送至前端展示",
 )
