@@ -1,16 +1,17 @@
 # backend/main.py
 import sys
 import io
-
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import os
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from chat_handler import handle_chat
 from connection_manager import manager
 from fastapi.responses import StreamingResponse
 import uvicorn
 from agent_config import agent
+from rag.Vector_DB_Memory import VectorDBMemory
+from memory_content import MemoryContent
+
 app = FastAPI()
 
 # CORS 中间件设置
@@ -52,6 +53,25 @@ async def chat_stream(q: str):
                     if hasattr(message, 'content'):
                         yield f"data: {message.content}\n\n"
     return StreamingResponse(generate(),media_type="text/event-stream")
+
+GeoFileMemory = VectorDBMemory(collection_name="GeoFile")
+
+@app.post("/addGeoFile")
+async def addGeoFile(request: Request):
+    try:
+        
+        
+        return {
+            "status": "success",
+            "message": "文件已成功添加到向量数据库",
+            "filename": file.filename
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"处理文件时发生错误: {str(e)}"
+        }
 
 # 启动服务
 if __name__ == "__main__":

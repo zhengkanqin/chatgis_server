@@ -40,10 +40,10 @@ def classify_field_type(dtype, data):
 
 async def read_shp_file(file_path: str):
     """
-    读取并解析shapefile地理数据文件，提取关键地理信息特征
+    读取并解析地理数据文件，提取关键地理信息特征
 
     参数:
-    - file_path: 需要读取的shp文件路径
+    - file_path: 需要读取的文件路径
 
     返回:
     - 处理结果状态及关键特征摘要
@@ -375,8 +375,8 @@ def format_crs_error(file_path, error_info):
     )
 
 
-read_shp_tool = FunctionTool(
+read_tool = FunctionTool(
     read_shp_file,
     name="read_shapefile",
-    description="读取并解析shapefile地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息，并将分析结果发送至前端展示",
+    description="读取并解析地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息",
 )
