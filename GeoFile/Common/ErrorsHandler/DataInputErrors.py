@@ -89,6 +89,14 @@ class ValueErrorHandler(BaseErrorHandler):
         elif "2" in error_msg:
             reasons.append("该文件类型是暂不支持的文件类型")
             solutions.append("尝试更换为shp/txt/excel数据重新上传")
+        elif "3" in error_msg:
+            reasons.append("无法自动识别坐标字段")
+            solutions.append("请手动为文件添加或修改表头信息")
+            solutions.append("将经度列命名为'经度', 'longitude', 'lon', 'x', 'X'中的一个")
+            solutions.append("将纬度列命名为'纬度', 'latitude', 'lat', 'y', 'Y'中的一个")
+        else:
+            reasons.append(error_msg)
+            solutions.append("请检查该值是否合规！")
 
         self.error_info.update({
             "原因": "文件重要值错误",

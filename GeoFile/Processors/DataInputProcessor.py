@@ -9,6 +9,7 @@ import logging
 import os
 import pandas as pd
 import geopandas as gpd
+from itertools import combinations
 from abc import ABC, abstractmethod
 
 from GeoFile.Common.ErrorsHandler.DataInputErrors import GeoFileErrorFactory
@@ -179,7 +180,7 @@ class ShpProcessor(BaseFileProcessor):
         # 记录原始数据
         logging.info(f"SHP处理原始数据：{json.dumps(summary, indent=2)}")
 
-        return {"status": "success", "data": result_msg}
+        return result_msg
 
 
 class TabularProcessor(BaseFileProcessor):
@@ -237,50 +238,45 @@ class TabularProcessor(BaseFileProcessor):
 
         # ================= 坐标字段检测 =================
         if self.lon_col is None or self.lat_col is None:
-            self.header_mode = not self.df.columns.str.contains('^Unnamed').all()
+            try:
+                self.header_mode = not self.df.columns.str.contains('^Unnamed').all()
+            except AttributeError as e:
+                self.header_mode = True
 
             self.lon_col = self.detect_col('lon') or (0 if not self.header_mode else None)
             self.lat_col = self.detect_col('lat') or (1 if not self.header_mode else None)
 
         # ================= 智能识别增强 =================
         if self.lon_col is None or self.lat_col is None:
-            # 获取所有数值列
-            numeric_cols = self.df.select_dtypes(include=['number']).columns.tolist()
+            # 改进的数值列检测
+            numeric_cols = self.df.apply(pd.to_numeric, errors='coerce').notnull().all()
+            numeric_cols = numeric_cols[numeric_cols].index.tolist()
 
-            # 中国地理坐标范围阈值
-            CHINA_LON_RANGE = (73.66, 135.05)  # 东经73°40′~135°05′
-            CHINA_LAT_RANGE = (18.15, 53.55)  # 北纬18°10′~53°33′
+            if not numeric_cols:
+                raise ValueError("数据中未找到有效的数值列")
 
-            # 遍历数值列寻找候选列
+            CHINA_LON_RANGE = (73.66, 135.05)
+            CHINA_LAT_RANGE = (18.15, 53.55)
             candidate_pairs = []
-            for i in range(len(numeric_cols) - 1):
-                col1, col2 = numeric_cols[i], numeric_cols[i + 1]
+            sample_size = len(self.df)
+            confidence = 0.8 if sample_size < 1000 else 0.95
 
-                # 检查列对是否相邻（处理带表头和无表头情况）
-                is_adjacent = (
-                        (isinstance(col1, int) and isinstance(col2, int) and col2 == col1 + 1) or
-                        (isinstance(col1, str) and isinstance(col2, str) and
-                         col2.isdigit() and col1.isdigit() and int(col2) == int(col1) + 1)
-                )
+            def is_valid_range(col, target_range):
+                data = self.df[col].dropna()
+                return (
+                        (data.between(*target_range).mean() > confidence) and
+                        (abs(data.median() - (target_range[0] + target_range[1]) / 2) < 5
+                         ))
 
-                if not is_adjacent:
-                    continue
-
-                # 检查数值范围
-                col1_data = self.df[col1].dropna()
-                col2_data = self.df[col2].dropna()
-
-                col1_lon_candidate = (col1_data.between(*CHINA_LON_RANGE).mean() > 0.95)
-                col2_lat_candidate = (col2_data.between(*CHINA_LAT_RANGE).mean() > 0.95)
-
-                col1_lat_candidate = (col1_data.between(*CHINA_LAT_RANGE).mean() > 0.95)
-                col2_lon_candidate = (col2_data.between(*CHINA_LON_RANGE).mean() > 0.95)
-
-                # 记录符合条件的列对
-                if col1_lon_candidate and col2_lat_candidate:
-                    candidate_pairs.append((col1, col2))
-                elif col1_lat_candidate and col2_lon_candidate:
-                    candidate_pairs.append((col2, col1))
+            # 遍历所有列组合
+            for col1, col2 in combinations(numeric_cols, 2):
+                try:
+                    if is_valid_range(col1, CHINA_LON_RANGE) and is_valid_range(col2, CHINA_LAT_RANGE):
+                        candidate_pairs.append((col1, col2))
+                    elif is_valid_range(col2, CHINA_LON_RANGE) and is_valid_range(col1, CHINA_LAT_RANGE):
+                        candidate_pairs.append((col2, col1))
+                except TypeError as e:
+                    pass
 
             # 选择最佳候选对
             if candidate_pairs:
@@ -292,20 +288,15 @@ class TabularProcessor(BaseFileProcessor):
                 self.lon_col, self.lat_col = best_pair
                 logging.info(f"智能选择坐标列：{self.lon_col}(经度), {self.lat_col}(纬度)")
             else:
-                err_msg = "无法自动识别坐标字段，请手动指定lon_col和lat_col参数"
-                await manager.send_message(err_msg)
-                return await error(err_msg)
+                raise ValueError("3")
+
         # 验证坐标字段有效性
         for col, col_type in [(self.lon_col, "经度"), (self.lat_col, "纬度")]:
-            if col is None:
-                raise ValueError("1")
-
             try:
                 self.df[col] = pd.to_numeric(self.df[col])
             except:
                 err_msg = f"{col_type}字段 {col} 包含非数值数据"
-                await manager.send_message(err_msg)
-                return await error(err_msg)
+                raise ValueError(err_msg)
 
         # ================= 数据分析 =================
         analysis = {
@@ -347,8 +338,8 @@ class TabularProcessor(BaseFileProcessor):
             elif field_type == "Date":
                 stats = {
                     "type": "Date",
-                    "min": self.df[col].min().strftime("%Y-%m-%d"),
-                    "max": self.df[col].max().strftime("%Y-%m-%d")
+                    "min": self.df[col].min().strftime("%Y-%m-%d %H:%M"),
+                    "max": self.df[col].max().strftime("%Y-%m-%d %H:%M")
                 }
             # 文本型处理
             elif field_type == "Text":
@@ -392,7 +383,7 @@ class TabularProcessor(BaseFileProcessor):
                 )
             elif stats['type'] == "Date":
                 output.append(
-                    f"    - 日期字段 [{col}]：范围 {stats['min']} 至 {stats['max']}"
+                    f"    - 时间字段 [{col}]：范围 {stats['min']} 至 {stats['max']}"
                 )
             elif stats['type'] == "Text":
                 if stats['unique_count'] <= 3:
@@ -411,9 +402,7 @@ class TabularProcessor(BaseFileProcessor):
         result_msg = "\n".join(output)
         await manager.send_message(result_msg)
 
-        logging.info(f"地理数据处理摘要：{json.dumps(analysis, indent=2)}")
-
-        return await success(result_msg)
+        return result_msg
 
 
 class FileProcessorFactory:
@@ -427,6 +416,15 @@ class FileProcessorFactory:
     @classmethod
     async def create_processor(cls, file_path: str):
         """创建处理器实例"""
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        if ext not in cls.PROCESSORS:
+            raise ValueError("2")
+        processor_class = cls.PROCESSORS[ext]
+        processor = processor_class(file_path)
+
+        process_result = await processor.core()
         try:
             ext = os.path.splitext(file_path)[1].lower()
 

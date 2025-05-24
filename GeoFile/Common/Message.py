@@ -17,6 +17,7 @@ async def success(data: str):
     :return: 结构示例 {"status": "success", "data": ...}
     """
     await manager.send_message(data)
+    print(data)
     return {"status": "success", "data": data}
 
 
@@ -29,7 +30,7 @@ async def error(message: str, error_code: str = None):
     :return: 结构示例 {"status": "error", "message": ..., "code": ...}
     """
     await manager.send_message(message)
-    logging.error(f"出现错误: {str(message)}")
+    logging.error(f"{str(message)}")
     response = {"status": "error", "message": message}
     if error_code:
         response["code"] = error_code
