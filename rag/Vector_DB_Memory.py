@@ -7,14 +7,17 @@ import os
 from openai import OpenAI
 import json
 import hashlib
-with open('../config.json', 'r', encoding='utf-8') as configFile:
+
+# 修改配置文件路径
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+config_path = os.path.join(base_dir, 'config.json')
+with open(config_path, 'r', encoding='utf-8') as configFile:
     config = json.load(configFile)
 
 
 class VectorDBMemory(Memory):
     def __init__(self, collection_name: str = "autogen_memory"):
         # 从配置文件获取数据库路径
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         db_path = os.path.normpath(os.path.join(base_dir, config["向量数据库路径"]))
         print(f"数据库存储路径: {db_path}")
         

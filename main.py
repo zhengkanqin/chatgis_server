@@ -10,7 +10,9 @@ from fastapi.responses import StreamingResponse
 import uvicorn
 from agent_config import agent
 from rag.Vector_DB_Memory import VectorDBMemory
-from memory_content import MemoryContent
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+
 
 app = FastAPI()
 
@@ -56,22 +58,22 @@ async def chat_stream(q: str):
 
 GeoFileMemory = VectorDBMemory(collection_name="GeoFile")
 
-@app.post("/addGeoFile")
-async def addGeoFile(request: Request):
-    try:
-        
-        
-        return {
-            "status": "success",
-            "message": "文件已成功添加到向量数据库",
-            "filename": file.filename
-        }
-        
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"处理文件时发生错误: {str(e)}"
-        }
+class MemoryContent(BaseModel):
+    content: str
+    metadata: Optional[Dict[str, Any]] = None
+
+@app.post("/add_memory")
+async def add_memory(content: MemoryContent, filepath: Optional[str] = None):
+    print(filepath)
+    await GeoFileMemory.add(content, filepath)
+    return {"status": "success", "message": "内容已成功添加到向量数据库"}
+
+@app.get("/get_memory")
+async def get_memory(page: int = 1,page_size: int = 100,metadata_filter: Optional[Dict[str, Any]] = None):
+    result = await GeoFileMemory.get_paginated_data(page=page,page_size=page_size,metadata_filter=metadata_filter)
+    return result
+
+
 
 # 启动服务
 if __name__ == "__main__":
