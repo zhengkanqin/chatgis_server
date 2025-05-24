@@ -32,9 +32,16 @@ agent = AssistantAgent(
     name="assistant",
     model_client=model_client,
     system_message="你的名字是GIS助手，你需要提供地理信息相关的服务，并尽可能的让用户详细理解。如果用户需要介绍地方，能绘制地图则调用绘制地图的工具",
-    tools=[draw_boundary_tool,read_tool],
+    tools=[draw_boundary_tool],
     reflect_on_tool_use=True,
     model_client_stream=True,
 )
 
-
+geoFileAgent = AssistantAgent(
+    name="GeoFileReader",
+    model_client=model_client,
+    system_message="你是文件理解器，你会收到一条条文件地址，你的工作是使用文件阅读工具，结合地理信息领域的知识，精确且结构化的描述地理数据，一定要陈述其绝对文件路径。遇到经纬度的范围时，可以适当补充其大致位置信息，使用markdown格式，不要有多余的输出。",
+    tools=[read_tool],
+    reflect_on_tool_use=True,
+    model_client_stream=True,
+)
