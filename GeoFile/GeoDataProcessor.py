@@ -1,4 +1,4 @@
-# backend/GeoDataProcessor.py
+# GeoFile/GeoDataProcessor.py
 
 from connection_manager import manager
 from autogen_core.tools import FunctionTool

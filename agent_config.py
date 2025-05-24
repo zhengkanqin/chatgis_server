@@ -3,7 +3,7 @@ import json
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from FunctionCall_List import draw_boundary_tool
-from GeoFile.ShpProcessor import read_tool
+from GeoFile.Service.DataInputService import read_tool
 
 with open('config.json', 'r', encoding='utf-8') as configFile:
     config = json.load(configFile)
