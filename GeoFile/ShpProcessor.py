@@ -38,7 +38,7 @@ def classify_field_type(dtype, data):
     return "Unknown"
 
 
-async def read_shp_file(file_path: str):
+async def read_file(file_path: str):
     """
     读取并解析地理数据文件，提取关键地理信息特征
 
@@ -376,7 +376,7 @@ def format_crs_error(file_path, error_info):
 
 
 read_tool = FunctionTool(
-    read_shp_file,
-    name="read_shapefile",
-    description="读取并解析地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息",
+    read_file,
+    name="read_file",
+    description="读取并解析地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息，支持shp格式",
 )
