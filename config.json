@@ -5,6 +5,5 @@
   "Embedding模型名称": "text-embedding-v3",
   "Embedding模型密钥": "sk-25da6ebf963042c7a62d1634933904bf",
   "Embedding模型地址": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  "地理信息数据知识库地址": "",
   "向量数据库路径": "chroma_db"
 }
