@@ -13,6 +13,7 @@ from typing import Optional, Dict, Any
 
 from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFactory
 from GeoFile.Common.Message import success, error
+from GeoFile.Tools.BufferTool import buffer_tool
 from GeoFile.Tools.Shp2GeojsonTool import shp2geojson
 from GeoFile.Tools.ShpQueryTools import query_tool
 
@@ -102,7 +103,15 @@ class BufferProcessor(BaseOperationProcessor):
         target_ids = self.params.get('target_ids')
         buffer_distance = self.params.get('buffer_distance')
         output_path = self.params.get('output_path')
-        return f"缓冲区操作: 文件={self.file_path}, ID={target_ids}, 距离={buffer_distance}, 输出={output_path}"
+
+        geojson_saved_path, shp_saved_path = (
+            buffer_tool(self.file_path, target_ids, buffer_distance, output_path))
+        result = (
+            f"缓冲区GeoJSON文件已保存至: {geojson_saved_path}\n"
+            f"缓冲区SHP文件已保存至: {shp_saved_path}"
+        )
+
+        return result
 
 
 class ShpProcessorFactory:

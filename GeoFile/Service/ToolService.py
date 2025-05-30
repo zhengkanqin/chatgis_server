@@ -41,7 +41,7 @@ async def shp_service(file_path: str, operation: str, params: Optional[Dict[str,
     3. 缓冲区分析 - 为指定要素创建缓冲区，输出:
        - GeoJSON格式的缓冲区多边形
        - 地图瓦片坐标(左上右下)
-       - 保存为新的SHP文件(可选)
+       - 保存为新的SHP文件
        operation='buffer', params={'target_ids': [要素ID], 'buffer_distance': 距离(米), 'output_path': 输出路径(可选)}
 
     参数:
