@@ -1,12 +1,12 @@
 # GeoFile/Processors/DataInputProcessor.py
 """
-统一消息格式处理模块
+文件输入处理模块
 
-提供标准化的成功/错误响应格式生成功能
+支持多种格式的文件自动读取
 """
+import os
 import json
 import logging
-import os
 import pandas as pd
 import geopandas as gpd
 from itertools import combinations
