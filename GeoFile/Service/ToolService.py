@@ -42,7 +42,7 @@ async def shp_service(file_path: str, operation: str, params: Optional[Dict[str,
        - GeoJSON格式的缓冲区多边形
        - 地图瓦片坐标(左上右下)
        - 保存为新的SHP文件
-       operation='buffer', params={'target_ids': [要素ID], 'buffer_distance': 距离(米), 'output_path': 输出路径(可选)}
+       operation='buffer', params={'target_ids': [要素ID], 'buffer_distance': 距离(米), 'buffer_color': 图片颜色(16进制颜色字符串), 'output_path': 输出路径(可选)}
 
     参数:
     - file_path: SHP文件路径
@@ -52,6 +52,7 @@ async def shp_service(file_path: str, operation: str, params: Optional[Dict[str,
         * query_target: 查询目标类型(query时有效): 'all'=全表, 'row'=单行, 'column'=单列, 'single'=单格
         * target_ids: 目标要素ID(query/buffer时有效)
         * buffer_distance: 缓冲区距离(米)(buffer时有效)
+        * buffer_color: 缓冲区PNG图片颜色(字符串)(buffer时有效)
         * output_path: 缓冲区输出目录路径(convert/buffer时有效)
 
     返回:
@@ -72,7 +73,7 @@ async def shp_service(file_path: str, operation: str, params: Optional[Dict[str,
         filtered_params = {k: v for k, v in params.items() if k in ["attributes", "query_target", "target_ids"]}
     elif operation == "buffer":
         # 需要target_id/buffer_distance/output_path
-        filtered_params = {k: v for k, v in params.items() if k in ["target_ids", "buffer_distance", "output_path"]}
+        filtered_params = {k: v for k, v in params.items() if k in ["target_ids", "buffer_distance", "buffer_color", "output_path"]}
     else:
         # 无效操作类型
         return {

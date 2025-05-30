@@ -1,17 +1,26 @@
 # GeoFile/Tools/BufferTool.py
 import os
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon as MplPolygon
+from matplotlib.collections import PatchCollection
 from datetime import datetime
-
 import geopandas as gpd
+import numpy as np
 from shapely.geometry import Polygon, Point, MultiPolygon
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from pyproj import CRS, Transformer
+import matplotlib
+
+
+# 确保使用Agg后端，避免GUI依赖
+matplotlib.use('Agg')
 
 
 def buffer_tool(
         file_path: str,
         target_ids: List[int],
         buffer_distance: float,
+        buffer_color: str,
         custom_output_path: Optional[str] = None
 ):
     """
@@ -31,6 +40,10 @@ def buffer_tool(
         raise ValueError("必须提供至少一个目标要素ID")
     if buffer_distance <= 0:
         raise ValueError("缓冲区距离必须大于0")
+
+    # 验证颜色格式
+    if not buffer_color.startswith('#') or len(buffer_color) not in [4, 7, 9]:
+        raise ValueError("颜色格式应为十六进制，如 #RRGGBB 或 #RRGGBBAA")
 
     # 检查ID范围
     invalid_ids = [id for id in target_ids if id < 0 or id >= len(gdf)]
@@ -67,7 +80,7 @@ def buffer_tool(
 
     # 9. 计算边界框 (左上右下)
     minx, miny, maxx, maxy = buffer_geom.bounds
-    bbox = [minx, miny, maxx, maxy]  # [左, 下, 右, 上]
+    bbox = [minx, miny, maxx, maxy]
 
     # 10. 保存SHP文件 (如果指定了输出路径)
     # 处理输出路径
@@ -96,8 +109,107 @@ def buffer_tool(
     buffer_gdf.to_file(shp_path, driver="ESRI Shapefile")
     shp_saved_path = os.path.abspath(shp_path)
 
+    # 生成PNG图片
+    png_path = os.path.join(output_dir, f"{base_name}_buffer_{timestamp}.png")
+    create_buffer_png(buffer_geom, buffer_color, png_path)
+    png_saved_path = os.path.abspath(png_path)
+
     # 11. 返回结果
-    return geojson_saved_path, shp_saved_path
+    return geojson_saved_path, png_saved_path, shp_saved_path, bbox
+
+
+def create_buffer_png(buffer_geom, buffer_color: str, output_path: str) -> None:
+    """
+    创建缓冲区PNG图片
+
+    参数:
+    - buffer_geom: 缓冲区的几何对象
+    - buffer_color: 缓冲区填充颜色（十六进制格式）
+    - output_path: 输出PNG文件路径
+    """
+    # 创建图形和坐标轴
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    # 设置透明背景
+    fig.patch.set_alpha(0.0)
+    ax.set_axis_off()
+
+    # 获取几何边界
+    minx, miny, maxx, maxy = buffer_geom.bounds
+    width = maxx - minx
+    height = maxy - miny
+
+    # 设置坐标轴范围（添加5%的边距）
+    margin = max(width, height) * 0.05
+    ax.set_xlim(minx - margin, maxx + margin)
+    ax.set_ylim(miny - margin, maxy + margin)
+
+    # 确保等比例缩放
+    ax.set_aspect('equal')
+
+    # 创建补丁列表
+    patches = []
+
+    # 处理不同几何类型
+    if buffer_geom.geom_type == 'Polygon':
+        # 单个多边形
+        patches.append(create_polygon_patch(buffer_geom, buffer_color))
+    elif buffer_geom.geom_type == 'MultiPolygon':
+        # 多个多边形
+        for polygon in buffer_geom.geoms:
+            patches.append(create_polygon_patch(polygon, buffer_color))
+
+    # 添加所有补丁到坐标轴
+    collection = PatchCollection(patches, match_original=True)
+    ax.add_collection(collection)
+
+    # 保存为PNG（透明背景）
+    plt.savefig(
+        output_path,
+        format='png',
+        dpi=300,
+        bbox_inches='tight',
+        pad_inches=0,
+        transparent=True
+    )
+
+    # 清理资源
+    plt.close(fig)
+
+
+def create_polygon_patch(polygon, color: str) -> MplPolygon:
+    """
+    为单个多边形创建matplotlib补丁
+
+    参数:
+    - polygon: Shapely多边形对象
+    - color: 填充颜色（十六进制格式）
+
+    返回:
+    - matplotlib.patches.Polygon
+    """
+    # 获取外部环坐标
+    exterior = np.array(polygon.exterior.coords)
+
+    # 创建多边形补丁
+    patch = MplPolygon(
+        exterior,
+        closed=True,
+        fill=True,
+        edgecolor='none',  # 无边框
+        facecolor=color,
+        alpha=1.0
+    )
+
+    # 添加孔洞（如果有）
+    interiors = []
+    for interior in polygon.interiors:
+        interiors.append(np.array(interior.coords))
+
+    if interiors:
+        patch.set_holes(interiors)
+
+    return patch
 
 
 def _get_utm_crs(lon: float, lat: float) -> CRS:

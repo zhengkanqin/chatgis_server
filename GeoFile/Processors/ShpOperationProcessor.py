@@ -102,13 +102,21 @@ class BufferProcessor(BaseOperationProcessor):
         # 这里实现缓冲区分析逻辑
         target_ids = self.params.get('target_ids')
         buffer_distance = self.params.get('buffer_distance')
+        buffer_color = self.params.get('buffer_color')
         output_path = self.params.get('output_path')
 
-        geojson_saved_path, shp_saved_path = (
-            buffer_tool(self.file_path, target_ids, buffer_distance, output_path))
+        geojson_saved_path, png_saved_path, shp_saved_path, bbox = (
+            buffer_tool(self.file_path, target_ids, buffer_distance, buffer_color, output_path))
+
+        # 解构边界框坐标
+        minx, miny, maxx, maxy = bbox
+
+        # 格式化结果字符串
         result = (
             f"缓冲区GeoJSON文件已保存至: {geojson_saved_path}\n"
-            f"缓冲区SHP文件已保存至: {shp_saved_path}"
+            f"缓冲区PNG文件已保存至: {png_saved_path}\n"  # 添加了缺失的换行符
+            f"缓冲区SHP文件已保存至: {shp_saved_path}\n"  # 添加了换行符
+            f"缓冲区边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间"
         )
 
         return result
