@@ -11,10 +11,10 @@ from langgraph.types import Command, interrupt
 from Agent.GIS_State import Layer, GIS_State
 from typing import List
 
-os.environ["LANGSMITH_TRACING"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = "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"
-os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_PROJECT"] = "my-task-agent"
+# os.environ["LANGSMITH_TRACING"] = "true"
+# os.environ["LANGCHAIN_API_KEY"] = "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"
+# os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+# os.environ["LANGCHAIN_PROJECT"] = "my-task-agent"
 
 with open('./config.json', 'r', encoding='utf-8') as configFile:
     system_config = json.load(configFile)
@@ -80,20 +80,7 @@ workflow.add_edge("tools", "agent")
 
 memory = MemorySaver()
 
-Test_Agent = workflow.compile(checkpointer=memory)
+Agent_Main = workflow.compile(checkpointer=memory)
 
-# final_state = Test_Agent.invoke(
-#     input={"messages":[HumanMessage(content="查询上海天气")]},
-#     config={"configurable": {"thread_id": 42}}
-# )
-# print(final_state["messages"][-1].content)
-# print("--------------------------")
-# final_state = Test_Agent.invoke(
-#     input={"messages":[HumanMessage(content="在地图上绘制枝江市边界")]},
-#     config={"configurable": {"thread_id": 42}}
-# )
-# print(final_state["messages"][-1].content)
-#
-#
-# #本测试案例用于测试简单的调用工具智能体环节。
+
 

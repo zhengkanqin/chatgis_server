@@ -3,7 +3,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.types import Command
 
 from Agent.GIS_State import Layer, GIS_State, create_default_state
-from Agent.test import Test_Agent
+from Agent.Agent_Main import Agent_Main
 import json
 
 
@@ -80,7 +80,7 @@ async def event_generator(
         try:
             is_interrupted = False
             human_command = Command(resume={"data": q})
-            async for update in Test_Agent.astream(
+            async for update in Agent_Main.astream(
                     input=human_command,
                     config={"configurable": {"thread_id": 42}},
                     stream_mode="updates"
@@ -117,7 +117,7 @@ async def event_generator(
             messages = file_messages + messages
 
         # 使用 LangGraph 的异步流式方法
-        async for update in Test_Agent.astream(
+        async for update in Agent_Main.astream(
                 input={"messages": messages},
                 config={"configurable": {"thread_id": 42}},
                 stream_mode="updates"

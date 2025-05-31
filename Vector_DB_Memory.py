@@ -16,7 +16,6 @@ class VectorDBMemory(Memory):
     def __init__(self, collection_name: str = "autogen_memory"):
         # 从配置文件获取数据库路径
         db_path = os.path.normpath(os.path.join(config["向量数据库路径"]))
-        print(f"数据库存储路径: {db_path}")
 
         # 确保数据库目录存在
         os.makedirs(db_path, exist_ok=True)
