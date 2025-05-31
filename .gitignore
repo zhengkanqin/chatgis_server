@@ -1,7 +1,3 @@
 dist
 build
-chroma_db
-config.json
-.idea\chatgis.iml
-.idea\misc.xml
-
+/.idea
