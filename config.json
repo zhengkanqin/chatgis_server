@@ -1,9 +1,10 @@
 {
-  "对话大模型名称": "deepseek-chat",
-  "对话大模型密钥": "sk-00d80e327eed4b40952e5ab249398eac",
-  "对话大模型地址": "https://api.deepseek.com",
+  "对话大模型名称": "gpt-4o-mini",
+  "对话大模型密钥": "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",
+  "对话大模型地址": "https://api.openai.com/v1",
   "Embedding模型名称": "text-embedding-v3",
   "Embedding模型密钥": "sk-25da6ebf963042c7a62d1634933904bf",
   "Embedding模型地址": "https://dashscope.aliyuncs.com/compatible-mode/v1",
   "向量数据库路径": "chroma_db"
 }
+
