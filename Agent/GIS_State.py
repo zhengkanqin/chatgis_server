@@ -1,14 +1,26 @@
-from typing import TypedDict, List, NotRequired
+from typing import TypedDict, List, NotRequired, Annotated
 from langchain_core.messages import BaseMessage
+from operator import add
 
-class MyState(TypedDict):
-    messages: List[BaseMessage]  # 保留默认消息结构
-    layers: List[str]  # 位置信息
-    map:str
-def create_default_state() -> MyState:
+class Layer(TypedDict):
+    name:str
+    type:str
+    data:NotRequired[dict]
+
+class GIS_State(TypedDict):
+    messages: Annotated[List[BaseMessage], add]
+    temp_messages: Annotated[List[BaseMessage], add]
+    sender:str
+    mapInfo:str
+    layers:List[Layer]
+
+def create_default_state() -> GIS_State:
     """创建默认状态"""
     return {
         "messages": [],
-        "layers": [],
-        "map":""
+        "temp_messages": [],
+        "sender": "",
+        "mapInfo": "",
+        "layers": []
     }
+

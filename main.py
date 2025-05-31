@@ -3,6 +3,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from Agent.Chat_API import event_generator
+from Agent.GIS_State import Layer
 from connection_manager import manager
 import uvicorn
 from Vector_DB_Memory import VectorDBMemory
@@ -128,21 +129,18 @@ async def query_memory(request: QueryRequest):
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
 
-class ImageData(BaseModel):
-    """图像数据模型"""
-    image_url: Optional[str] = None
-    image_base64: Optional[str] = None
-    caption: Optional[str] = None
+
 
 class ChatRequest(BaseModel):
     query: str
     filelist: Optional[List[str]] = None
-
+    layers: Optional[List[Layer]] = None
+    mapinfo: Optional[str] = None
 @app.post("/chat")
 async def chat(
     request: ChatRequest,
 ):
-    return StreamingResponse(event_generator(request.query,request.filelist),media_type="text/event-stream")
+    return StreamingResponse(event_generator(request.query,request.filelist,request.layers,request.mapinfo),media_type="text/event-stream")
 
 
 

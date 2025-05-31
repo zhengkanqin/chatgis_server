@@ -8,6 +8,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END,StateGraph,MessagesState
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Command, interrupt
+from Agent.GIS_State import Layer, GIS_State
+from typing import List
 
 os.environ["LANGSMITH_TRACING"]="true"
 os.environ["LANGCHAIN_API_KEY"] = "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"
@@ -40,19 +42,18 @@ tools = [search,draw_boundary]
 
 llm = ChatOpenAI(model=system_config["对话大模型名称"],api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"],temperature=0.4).bind_tools(tools)
 
-# res = llm.invoke([HumanMessage(content="你好")])
 
 tool_node = ToolNode(tools)
 
 
-def should_continue(state:MessagesState):
+def should_continue(state:GIS_State):
     messages = state["messages"]
     last_message = messages[-1]
     if last_message.tool_calls:
         return "tools"
     return END
 
-def call_model(state:MessagesState):
+def call_model(state:GIS_State):
     messages = state["messages"]
     if not any(isinstance(m, SystemMessage) for m in messages):
         # 添加系统提示词，仅当未提供时添加（避免重复）
@@ -61,15 +62,11 @@ def call_model(state:MessagesState):
 """
 ))
     response = llm.invoke(messages)
-    # human_response = interrupt({"query": "乐乐乐"})
-    return {"messages":response}
+    return {"messages": [response]}
 
-
-
-
-workflow = StateGraph(MessagesState)
-workflow.add_node("agent",call_model)
-workflow.add_node("tools",tool_node)
+workflow = StateGraph(GIS_State)
+workflow.add_node("agent", call_model)
+workflow.add_node("tools", tool_node)
 
 workflow.set_entry_point("agent")
 
@@ -101,4 +98,3 @@ Test_Agent = workflow.compile(checkpointer = memory)
 #
 # #本测试案例用于测试简单的调用工具智能体环节。
 
-import chromadb

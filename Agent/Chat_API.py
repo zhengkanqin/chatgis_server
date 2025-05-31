@@ -2,6 +2,7 @@ from typing import AsyncGenerator, List, Optional
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.types import Command
 
+from Agent.GIS_State import Layer, GIS_State, create_default_state
 from Agent.test import Test_Agent
 import json
 
@@ -10,6 +11,7 @@ import json
 is_interrupted = False
 interrupt_query = ""
 
+state:GIS_State = create_default_state()
 
 def safe_json_serialize(obj):
     """安全地将对象转换为可JSON序列化的格式"""
@@ -26,21 +28,30 @@ def safe_json_serialize(obj):
 
 async def process_messages(update: dict) -> AsyncGenerator[str, None]:
     """处理消息的通用逻辑"""
+    print(update)
     if "agent" in update and "messages" in update["agent"]:
-        message = update["agent"]["messages"]
-        if hasattr(message, "content") and message.content:
-            response = {
-                "type": "message",
-                "content": message.content
-            }
-            yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
-        elif hasattr(message, "tool_calls"):
-            for tool_call in message.tool_calls:
+        messages = update["agent"]["messages"]
+        # 只处理 AI 消息
+        for message in messages:
+            # 跳过系统消息和人类消息
+            if isinstance(message, (SystemMessage, HumanMessage)):
+                continue
+                
+            if hasattr(message, "content") and message.content:
                 response = {
-                    "type": "tool_start",
-                    "content": f"正在执行{tool_call['name']}..."
+                    "type": "message",
+                    "content": message.content
                 }
+
                 yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
+            elif hasattr(message, "tool_calls"):
+                for tool_call in message.tool_calls:
+                    response = {
+                        "type": "tool_start",
+                        "content": f"正在执行{tool_call['name']}..."
+                    }
+
+                    yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
     elif "tools" in update and "messages" in update["tools"]:
         for tool_message in update["tools"]["messages"]:
             if hasattr(tool_message, "content"):
@@ -48,6 +59,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
                     "type": "tool_result",
                     "content": tool_message.content
                 }
+
                 yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
 
 #--------------------------------------------------------------------------------------------
@@ -59,10 +71,10 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
 async def event_generator(
     q: str,
     files: Optional[List[str]] = None,
+    layers: Optional[List[Layer]] = None,
+    mapInfo: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     global is_interrupted, interrupt_query
-    print(q)
-    print(files)
     # 如果处于中断状态，直接使用Command恢复会话
     if is_interrupted:
         try:
@@ -96,19 +108,13 @@ async def event_generator(
         # 添加用户查询消息
         messages.append(HumanMessage(content=q))
         
-        # 处理文件消息，这里需要添加多模态消息。
-        # if files:
-        #     # file_messages = []
-        #     # for file_path in files:
-        #     #     try:
-        #     #         with open(file_path, 'r', encoding='utf-8') as f:
-        #     #             content = f.read()
-        #     #             file_messages.append(HumanMessage(content=f"文件 {file_path} 的内容：\n{content}"))
-        #     #     except Exception as e:
-        #     #         file_messages.append(HumanMessage(content=f"无法读取文件 {file_path}：{str(e)}"))
-        #     #
-        #     # # 将文件消息添加到消息列表的开头
-        #     # messages = file_messages + messages
+        # 处理文件消息，添加文件URL到消息列表
+        if files:
+            file_messages = []
+            for file_url in files:
+                file_messages.append(HumanMessage(content=f"文件URL：{file_url}"))
+            # 将文件消息添加到消息列表的开头
+            messages = file_messages + messages
 
         # 使用 LangGraph 的异步流式方法
         async for update in Test_Agent.astream(
