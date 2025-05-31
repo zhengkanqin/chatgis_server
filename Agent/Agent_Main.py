@@ -11,10 +11,10 @@ from langgraph.types import Command, interrupt
 from Agent.GIS_State import Layer, GIS_State
 from typing import List
 
-# os.environ["LANGSMITH_TRACING"] = "true"
-# os.environ["LANGCHAIN_API_KEY"] = "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"
-# os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-# os.environ["LANGCHAIN_PROJECT"] = "my-task-agent"
+os.environ["LANGSMITH_TRACING"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = "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"
+os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+os.environ["LANGCHAIN_PROJECT"] = "my-task-agent"
 
 with open('./config.json', 'r', encoding='utf-8') as configFile:
     system_config = json.load(configFile)
@@ -58,14 +58,14 @@ def should_continue(state:GIS_State):
 
 def call_model(state:GIS_State):
     messages = state["messages"]
+    # human_response = interrupt({"query": "乐乐乐"})
     if not any(isinstance(m, SystemMessage) for m in messages):
-        # 添加系统提示词，仅当未提供时添加（避免重复）
-        messages.insert(0, SystemMessage(content="""
-你是一个智能助手
+        messages.insert(0, SystemMessage(content=
 """
-                                         ))
+你是一个智能助手
+"""))
     response = llm.invoke(messages)
-    return {"messages": [response]}
+    return {"messages": [response],"sender":"123"}
 
 workflow = StateGraph(GIS_State)
 workflow.add_node("agent", call_model)
@@ -79,7 +79,6 @@ workflow.add_conditional_edges("agent", should_continue)
 workflow.add_edge("tools", "agent")
 
 memory = MemorySaver()
-
 Agent_Main = workflow.compile(checkpointer=memory)
 
 

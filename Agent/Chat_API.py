@@ -6,12 +6,11 @@ from Agent.GIS_State import Layer, GIS_State, create_default_state
 from Agent.Agent_Main import Agent_Main
 import json
 
-
 # 模块级变量，用于存储中断状态
 is_interrupted = False
 interrupt_query = ""
 
-state:GIS_State = create_default_state()
+
 
 def safe_json_serialize(obj):
     """安全地将对象转换为可JSON序列化的格式"""
@@ -36,7 +35,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
             # 跳过系统消息和人类消息
             if isinstance(message, (SystemMessage, HumanMessage)):
                 continue
-                
+
             if hasattr(message, "content") and message.content:
                 response = {
                     "type": "message",
@@ -62,17 +61,18 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
 
                 yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
 
-#--------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------
-#-------------------------------------------具体逻辑------------------------------------------
-#--------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------
+# -------------------------------------------具体逻辑------------------------------------------
+# --------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------
 
 async def event_generator(
-    q: str,
-    files: Optional[List[str]] = None,
-    layers: Optional[List[Layer]] = None,
-    mapInfo: Optional[str] = None,
+        q: str,
+        files: Optional[List[str]] = None,
+        layers: Optional[List[Layer]] = None,
+        mapInfo: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     global is_interrupted, interrupt_query
     # 如果处于中断状态，直接使用Command恢复会话
@@ -100,14 +100,14 @@ async def event_generator(
             }
             yield f"data: {json.dumps(end_message, ensure_ascii=False)}\n\n"
         return
-    
+
     # 正常对话流程
     try:
         messages = []
-        
+
         # 添加用户查询消息
         messages.append(HumanMessage(content=q))
-        
+
         # 处理文件消息，添加文件URL到消息列表
         if files:
             file_messages = []
@@ -134,11 +134,11 @@ async def event_generator(
                     }
                     yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
                     return
-            
+
             # 处理普通消息
             async for message in process_messages(update):
                 yield message
-                
+
     except Exception as e:
         error_message = {
             "type": "error",
