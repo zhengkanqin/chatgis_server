@@ -58,7 +58,6 @@ def should_continue(state:GIS_State):
 
 def call_model(state:GIS_State):
     messages = state["messages"]
-    # human_response = interrupt({"query": "乐乐乐"})
     if not any(isinstance(m, SystemMessage) for m in messages):
         messages.insert(0, SystemMessage(content=
 """

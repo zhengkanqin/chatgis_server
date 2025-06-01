@@ -137,9 +137,11 @@ class ChatRequest(BaseModel):
     layers: Optional[List[Layer]] = None
     mapinfo: Optional[str] = None
 @app.post("/chat")
-async def chat(
-    request: ChatRequest,
-):
+async def chat(request: ChatRequest):
+    print(request.query)
+    print(request.filelist)
+    print(request.layers)
+    print(request.mapinfo)
     return StreamingResponse(event_generator(request.query,request.filelist,request.layers,request.mapinfo),media_type="text/event-stream")
 
 
@@ -161,5 +163,4 @@ if __name__ == "__main__":
         uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
-
-import posthog
+import  six
