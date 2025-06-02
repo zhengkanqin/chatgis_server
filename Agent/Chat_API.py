@@ -12,7 +12,7 @@ import requests
 is_interrupted = False
 interrupt_query = ""
 
-
+workAgent = Agent_Main
 
 def safe_json_serialize(obj):
     """安全地将对象转换为可JSON序列化的格式"""
@@ -117,7 +117,7 @@ async def event_generator(q: str,files: Optional[List[str]] = None,layers: Optio
                                             "layers":layers,
                                             "mapinfo": map_message
                                             })
-            async for update in Agent_Main.astream(
+            async for update in workAgent.astream(
                     input=human_command,
                     config={"configurable": {"thread_id": 42}},
                     stream_mode="updates"
@@ -141,7 +141,7 @@ async def event_generator(q: str,files: Optional[List[str]] = None,layers: Optio
     # 正常对话流程
     try:
         # 使用 LangGraph 的异步流式方法
-        async for update in Agent_Main.astream(
+        async for update in workAgent.astream(
                 input={"messages": messages,
                         "layers":layers,
                         "mapinfo": map_message
