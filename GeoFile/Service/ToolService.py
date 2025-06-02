@@ -175,3 +175,5 @@ async def buffer_query(file_path: str,
         params.update({"output_path": output_path})
 
     return await ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
+
+AnalysisTools = [read_file, to_geojson, attribute_query, buffer_create, buffer_query]
