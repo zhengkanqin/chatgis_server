@@ -1,5 +1,7 @@
 import json
 import os
+
+from GeoFile.Service.ToolService import AnalysisTools
 from connection_manager import manager
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
@@ -20,33 +22,43 @@ with open('./config.json', 'r', encoding='utf-8') as configFile:
     system_config = json.load(configFile)
 
 
-llm_main = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],
-                 base_url=system_config["对话大模型地址"], temperature=0.4)
+tools=AnalysisTools
+
+llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],
+                 base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(tools)
 
 
+tool_node = ToolNode(tools)
 
 
+def should_continue(state:GIS_State):
+    messages = state["messages"]
+    last_message = messages[-1]
+    if last_message.tool_calls:
+        return "tools"
+    return END
 
-
-
-
-
-
-
-
-
-
-
-
+def call_model(state:GIS_State):
+    messages = state["messages"]
+    if not any(isinstance(m, SystemMessage) for m in messages):
+        messages.insert(0, SystemMessage(content=
+"""
+你是一个智能助手
+"""))
+    response = llm.invoke(messages)
+    return {"messages": [response],"sender":"123"}
 
 workflow = StateGraph(GIS_State)
+workflow.add_node("agent", call_model)
+workflow.add_node("tools", tool_node)
 
+workflow.set_entry_point("agent")
 
+workflow.add_conditional_edges("agent", should_continue)
 
-
-
-
-
+#tools -> Agent
+workflow.add_edge("tools", "agent")
 
 memory = MemorySaver()
-Agent_Main = workflow.compile(checkpointer=memory)
+
+GeoTestAgent = workflow.compile(checkpointer=memory)

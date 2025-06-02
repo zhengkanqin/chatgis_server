@@ -4,3 +4,5 @@ build
 /config.json
 config.json
 *.json
+GeoFile
+

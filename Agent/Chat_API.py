@@ -3,16 +3,20 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.types import Command
 
 from Agent.GIS_State import Layer, GIS_State, create_default_state
-from Agent.Agent_Main import Agent_Main
+from Agent.Agent_Main import Agent_Main, workflow
 import json
 import base64
 import requests
+
+from Agent.GeoAgent import GeoTestAgent
 
 # 模块级变量，用于存储中断状态
 is_interrupted = False
 interrupt_query = ""
 
-workAgent = Agent_Main
+# workAgent = Agent_Main
+workAgent = GeoTestAgent
+
 
 def safe_json_serialize(obj):
     """安全地将对象转换为可JSON序列化的格式"""
