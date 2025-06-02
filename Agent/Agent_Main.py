@@ -11,10 +11,10 @@ from langgraph.types import Command, interrupt
 from Agent.GIS_State import Layer, GIS_State
 from typing import List
 
-os.environ["LANGSMITH_TRACING"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = "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"
-os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_PROJECT"] = "my-task-agent"
+# os.environ["LANGSMITH_TRACING"] = "true"
+# os.environ["LANGCHAIN_API_KEY"] = "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"
+# os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+# os.environ["LANGCHAIN_PROJECT"] = "my-task-agent"
 
 with open('./config.json', 'r', encoding='utf-8') as configFile:
     system_config = json.load(configFile)
