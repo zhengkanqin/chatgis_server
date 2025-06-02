@@ -129,8 +129,8 @@ async def buffer_create(file_path: str,
        - 地图PNG图片和定位点坐标
 
     参数:
-    - file_path: SHP文件路径
-    - buffer_create_ids: 目标要素ID列表
+    - file_path: 缓冲区创建要素的SHP文件路径
+    - buffer_create_ids: 用于创建缓冲区的要素ID列表
     - buffer_distance: 缓冲区距离(米)
     - buffer_color: 缓冲区PNG图片颜色(16进制颜色代码)
     """
@@ -147,6 +147,7 @@ async def buffer_create(file_path: str,
 @tool()
 async def buffer_query(file_path: str,
                        buffer_create_ids: List[int],
+                    query_file_path: str,
                        target_ids: List[int],
                        buffer_distance: float,
                        buffer_color: Optional[str] = "#66CCFF",
@@ -157,17 +158,19 @@ async def buffer_query(file_path: str,
        - GeoJSON格式的缓冲区多边形
        - 保存为新的SHP文件
        - 地图PNG图片和定位点坐标
-       -
+       - 查询结果
 
     参数:
-    - file_path: SHP文件路径
-    - buffer_create_ids: 创建缓冲区要素ID列表
-    - target_ids: 目标要素ID列表
+    - file_path: 缓冲区创建要素的SHP文件路径
+    - buffer_create_ids: 用于创建缓冲区的要素ID列表
+    - query_file_path: 目标要素的SHP文件路径
+    - target_ids: 需要检查的目标要素ID列表
     - buffer_distance: 缓冲区距离(米)
     - buffer_color: 缓冲区PNG图片颜色(16进制颜色代码)
     """
     params = {}
     params.update({"buffer_create_ids": buffer_create_ids})
+    params.update({"query_file_path": query_file_path})
     params.update({"target_ids": target_ids})
     params.update({"buffer_distance": buffer_distance})
     params.update({"buffer_color": buffer_color})
@@ -176,4 +179,4 @@ async def buffer_query(file_path: str,
 
     return await ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
 
-AnalysisTools = [read_file, to_geojson, attribute_query, buffer_create, buffer_query]
+AnalysisTools = [read_file, to_geojson, attribute_query, buffer_query]

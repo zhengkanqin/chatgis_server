@@ -126,6 +126,7 @@ class BufferQueryProcessor(BaseOperationProcessor):
 
     async def core(self):
         buffer_create_ids = self.params.get('buffer_create_ids')
+        query_file_path = self.params.get('query_file_path')
         target_ids = self.params.get('target_ids')
         buffer_distance = self.params.get('buffer_distance')
         buffer_color = self.params.get('buffer_color')
@@ -137,7 +138,7 @@ class BufferQueryProcessor(BaseOperationProcessor):
         # 解构边界框坐标
         minx, miny, maxx, maxy = bbox
 
-        buffer_query_result = buffer_query_tool(self.file_path, buffer_create_ids, target_ids, buffer_distance)
+        buffer_query_result = buffer_query_tool(self.file_path, buffer_create_ids, query_file_path, target_ids, buffer_distance)
 
         # 格式化结果字符串
         result = (
