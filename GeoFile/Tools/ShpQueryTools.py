@@ -1,11 +1,14 @@
 # GeoFile/Tools/ShpQueryTools.py
+from typing import List
+
 import geopandas as gpd
-import pandas as pd
-from typing import List, Dict, Any, Union, Optional
+
+from GeoFile.Tools.TableExportTool import TableExporterFactory
 
 
 class QueryProcessor:
     """属性查询处理器，支持多种查询模式并返回表格格式字符串"""
+
     def __init__(self, gdf, query_target, target_ids, attributes):
         self.gdf = gdf
         self.query_target = query_target
@@ -38,7 +41,8 @@ class QueryProcessor:
         else:
             raise ValueError(f"不支持的查询目标类型: {self.query_target}")
 
-    def _single_query(self, gdf: gpd.GeoDataFrame, target_ids: List[int], attributes: List[str]) -> str:
+    @staticmethod
+    def _single_query(gdf: gpd.GeoDataFrame, target_ids: List[int], attributes: List[str]) -> str:
         """
         独立查询 - 获取多个要素的指定字段值
 
@@ -70,9 +74,10 @@ class QueryProcessor:
         subset = gdf.iloc[target_ids][attributes]
 
         # 转换为表格字符串
-        return self._to_table_string(subset, title="独立查询结果")
+        return TableExporterFactory.export(subset, title="独立查询结果")
 
-    def _row_query(self, gdf: gpd.GeoDataFrame, target_ids: List[int]) -> str:
+    @staticmethod
+    def _row_query(gdf: gpd.GeoDataFrame, target_ids: List[int]) -> str:
         """
         横向查询 - 获取多个要素的所有字段值
 
@@ -97,9 +102,10 @@ class QueryProcessor:
         subset = gdf.iloc[target_ids][attribute_columns]
 
         # 转换为表格字符串
-        return self._to_table_string(subset, title="横向查询结果")
+        return TableExporterFactory.export(subset, title="横向查询结果")
 
-    def _column_query(self, gdf: gpd.GeoDataFrame, attributes: List[str]) -> str:
+    @staticmethod
+    def _column_query(gdf: gpd.GeoDataFrame, attributes: List[str]) -> str:
         """
         纵向查询 - 获取指定字段的所有值
 
@@ -123,9 +129,10 @@ class QueryProcessor:
         subset = gdf[attributes]
 
         # 转换为表格字符串
-        return self._to_table_string(subset, title="纵向查询结果")
+        return TableExporterFactory.export(subset, title="纵向查询结果")
 
-    def _all_query(self, gdf: gpd.GeoDataFrame) -> str:
+    @staticmethod
+    def _all_query(gdf: gpd.GeoDataFrame) -> str:
         """
         全表查询 - 获取整个属性表
 
@@ -140,32 +147,7 @@ class QueryProcessor:
         subset = gdf[attribute_columns]
 
         # 转换为表格字符串
-        return self._to_table_string(subset, title="全表查询结果")
-
-    @staticmethod
-    def _to_table_string(df, title: str = "") -> str:
-        """
-        将DataFrame转换为表格格式的字符串
-
-        参数:
-        - df: 要转换的DataFrame
-        - title: 表格标题
-
-        返回:
-        - 表格格式的字符串
-        """
-        # 创建表格字符串
-        table_str = ""
-
-        # 添加标题
-        if title:
-            table_str += f"{title}\n"
-
-        # 添加内容
-
-        table_str += str(df)
-
-        return table_str
+        return TableExporterFactory.export(subset, title="全表查询结果")
 
 
 def query_tool(gdf, query_target, target_ids, attributes):

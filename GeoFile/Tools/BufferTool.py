@@ -1,16 +1,15 @@
 # GeoFile/Tools/BufferTool.py
 import os
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon as MplPolygon
-from matplotlib.collections import PatchCollection
 from datetime import datetime
-import geopandas as gpd
-import numpy as np
-from shapely.geometry import Polygon, Point, MultiPolygon
-from typing import List, Dict, Any, Optional, Tuple
-from pyproj import CRS, Transformer
-import matplotlib
+from typing import List, Optional
 
+import geopandas as gpd
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Polygon as MplPolygon
+from pyproj import CRS
 
 # 确保使用Agg后端，避免GUI依赖
 matplotlib.use('Agg')
@@ -18,7 +17,7 @@ matplotlib.use('Agg')
 
 def buffer_tool(
         file_path: str,
-        target_ids: List[int],
+        buffer_create_ids: List[int],
         buffer_distance: float,
         buffer_color: str,
         custom_output_path: Optional[str] = None
@@ -36,7 +35,7 @@ def buffer_tool(
     gdf = gpd.read_file(file_path)
 
     # 验证输入
-    if not target_ids:
+    if not buffer_create_ids:
         raise ValueError("必须提供至少一个目标要素ID")
     if buffer_distance <= 0:
         raise ValueError("缓冲区距离必须大于0")
@@ -46,12 +45,12 @@ def buffer_tool(
         raise ValueError("颜色格式应为十六进制，如 #RRGGBB 或 #RRGGBBAA")
 
     # 检查ID范围
-    invalid_ids = [id for id in target_ids if id < 0 or id >= len(gdf)]
+    invalid_ids = [id for id in buffer_create_ids if id < 0 or id >= len(gdf)]
     if invalid_ids:
         raise ValueError(f"无效的要素ID: {invalid_ids}")
 
     # 提取目标要素
-    target_features = gdf.iloc[target_ids]
+    target_features = gdf.iloc[buffer_create_ids]
 
     # 合并目标要素几何
     combined_geometry = target_features.unary_union
@@ -64,7 +63,7 @@ def buffer_tool(
 
         # 转换坐标系
         gdf_proj = gdf.to_crs(utm_crs)
-        target_proj = gdf_proj.iloc[target_ids].unary_union
+        target_proj = gdf_proj.iloc[buffer_create_ids].unary_union
 
         # 在投影坐标系中创建缓冲区
         buffer_geom = target_proj.buffer(buffer_distance)
