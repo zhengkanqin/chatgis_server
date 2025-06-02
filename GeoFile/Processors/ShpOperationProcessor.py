@@ -5,19 +5,17 @@ SHP文件操作处理模块
 支持基础地理信息分析、几何类型统计、坐标范围提取等功能。
 """
 import os
-import json
-import logging
-import geopandas as gpd
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 
+import geopandas as gpd
+
 from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFactory
 from GeoFile.Common.Message import success, error
+from GeoFile.Tools.BufferQueryTool import buffer_query_tool
 from GeoFile.Tools.BufferTool import buffer_tool
 from GeoFile.Tools.Shp2GeojsonTool import shp2geojson
 from GeoFile.Tools.ShpQueryTools import query_tool
-
-from connection_manager import manager
 
 
 class BaseOperationProcessor(ABC):
@@ -99,14 +97,13 @@ class BufferProcessor(BaseOperationProcessor):
     SUPPORTED_OPERATION = ['buffer']
 
     async def core(self):
-        # 这里实现缓冲区分析逻辑
-        target_ids = self.params.get('target_ids')
+        buffer_create_ids = self.params.get('buffer_create_ids')
         buffer_distance = self.params.get('buffer_distance')
         buffer_color = self.params.get('buffer_color')
         output_path = self.params.get('output_path')
 
         geojson_saved_path, png_saved_path, shp_saved_path, bbox = (
-            buffer_tool(self.file_path, target_ids, buffer_distance, buffer_color, output_path))
+            buffer_tool(self.file_path, buffer_create_ids, buffer_distance, buffer_color, output_path))
 
         # 解构边界框坐标
         minx, miny, maxx, maxy = bbox
@@ -117,6 +114,38 @@ class BufferProcessor(BaseOperationProcessor):
             f"缓冲区PNG文件已保存至: {png_saved_path}\n"  # 添加了缺失的换行符
             f"缓冲区SHP文件已保存至: {shp_saved_path}\n"  # 添加了换行符
             f"缓冲区边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间"
+        )
+
+        return result
+
+
+class BufferQueryProcessor(BaseOperationProcessor):
+    """缓冲区分析处理器"""
+
+    SUPPORTED_OPERATION = ['buffer_query']
+
+    async def core(self):
+        buffer_create_ids = self.params.get('buffer_create_ids')
+        target_ids = self.params.get('target_ids')
+        buffer_distance = self.params.get('buffer_distance')
+        buffer_color = self.params.get('buffer_color')
+        output_path = self.params.get('output_path')
+
+        geojson_saved_path, png_saved_path, shp_saved_path, bbox = (
+            buffer_tool(self.file_path, buffer_create_ids, buffer_distance, buffer_color, output_path))
+
+        # 解构边界框坐标
+        minx, miny, maxx, maxy = bbox
+
+        buffer_query_result = buffer_query_tool(self.file_path, buffer_create_ids, target_ids, buffer_distance)
+
+        # 格式化结果字符串
+        result = (
+            f"缓冲区GeoJSON文件已保存至: {geojson_saved_path}\n"
+            f"缓冲区PNG文件已保存至: {png_saved_path}\n"  # 添加了缺失的换行符
+            f"缓冲区SHP文件已保存至: {shp_saved_path}\n"  # 添加了换行符
+            f"缓冲区边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间\n"
+            f"缓冲区查询成功: {buffer_query_result}"
         )
 
         return result
