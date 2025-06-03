@@ -3,15 +3,20 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.types import Command
 
 from Agent.GIS_State import Layer, GIS_State, create_default_state
-from Agent.Agent_Main import Agent_Main
+from Agent.Agent_Main import Agent_Main, workflow
 import json
+import base64
+import requests
 
+from Agent.GeoAgent import GeoTestAgent
 
 # 模块级变量，用于存储中断状态
 is_interrupted = False
 interrupt_query = ""
 
-state:GIS_State = create_default_state()
+# workAgent = Agent_Main
+workAgent = GeoTestAgent
+
 
 def safe_json_serialize(obj):
     """安全地将对象转换为可JSON序列化的格式"""
@@ -36,7 +41,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
             # 跳过系统消息和人类消息
             if isinstance(message, (SystemMessage, HumanMessage)):
                 continue
-                
+
             if hasattr(message, "content") and message.content:
                 response = {
                     "type": "message",
@@ -62,25 +67,61 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
 
                 yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
 
-#--------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------
-#-------------------------------------------具体逻辑------------------------------------------
-#--------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------
 
-async def event_generator(
-    q: str,
-    files: Optional[List[str]] = None,
-    layers: Optional[List[Layer]] = None,
-    mapInfo: Optional[str] = None,
-) -> AsyncGenerator[str, None]:
+# --------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------
+# -------------------------------------------具体逻辑------------------------------------------
+# --------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------
+
+async def event_generator(q: str,files: Optional[List[str]] = None,layers: Optional[List[Layer]] = None,mapInfo: Optional[str] = None,) -> AsyncGenerator[str, None]:
     global is_interrupted, interrupt_query
+
+    # 如果mapInfo不为None，则读取本地图片文件，编码为base64，构造HumanMessage
+    map_message = None
+    if mapInfo:
+        try:
+            with open(mapInfo, 'rb') as f:
+                img_bytes = f.read()
+            img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+            data_url = f"data:image/png;base64,{img_base64}"
+            map_message = HumanMessage(content=[{"type": "image_url", "image_url": {"url": data_url}}])
+        except Exception as e:
+            map_message = HumanMessage(content=f"地图文件读取失败：{mapInfo}，错误：{str(e)}")
+    
+    # 构造messages列表
+    messages = []
+    # 添加用户查询消息
+    messages.append(HumanMessage(content=q))
+    # 处理文件消息，添加文件URL到消息列表
+    if files:
+        file_messages = []
+        for file_url in files:
+            try:
+                # 读取本地文件内容
+                with open(file_url, 'rb') as f:
+                    img_bytes = f.read()
+                # 编码为base64
+                img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+                # 构造data url
+                data_url = f"data:image/png;base64,{img_base64}"
+                # 构造消息
+                file_messages.append(HumanMessage(content=[{"type": "image_url", "image_url": {"url": data_url}}]))
+            except Exception as e:
+                # 读取或编码失败时，插入错误消息
+                file_messages.append(HumanMessage(content=f"文件读取失败：{file_url}，错误：{str(e)}"))
+        # 将文件消息添加到消息列表的开头
+        messages = file_messages + messages
+    
     # 如果处于中断状态，直接使用Command恢复会话
     if is_interrupted:
         try:
             is_interrupted = False
-            human_command = Command(resume={"data": q})
-            async for update in Agent_Main.astream(
+            human_command = Command(resume={"messages": messages,
+                                            "layers":layers,
+                                            "mapinfo": map_message
+                                            })
+            async for update in workAgent.astream(
                     input=human_command,
                     config={"configurable": {"thread_id": 42}},
                     stream_mode="updates"
@@ -103,22 +144,12 @@ async def event_generator(
     
     # 正常对话流程
     try:
-        messages = []
-        
-        # 添加用户查询消息
-        messages.append(HumanMessage(content=q))
-        
-        # 处理文件消息，添加文件URL到消息列表
-        if files:
-            file_messages = []
-            for file_url in files:
-                file_messages.append(HumanMessage(content=f"文件URL：{file_url}"))
-            # 将文件消息添加到消息列表的开头
-            messages = file_messages + messages
-
         # 使用 LangGraph 的异步流式方法
-        async for update in Agent_Main.astream(
-                input={"messages": messages},
+        async for update in workAgent.astream(
+                input={"messages": messages,
+                        "layers":layers,
+                        "mapinfo": map_message
+                        },
                 config={"configurable": {"thread_id": 42}},
                 stream_mode="updates"
         ):
@@ -134,11 +165,11 @@ async def event_generator(
                     }
                     yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
                     return
-            
+
             # 处理普通消息
             async for message in process_messages(update):
                 yield message
-                
+
     except Exception as e:
         error_message = {
             "type": "error",
@@ -151,3 +182,6 @@ async def event_generator(
             "content": "对话结束"
         }
         yield f"data: {json.dumps(end_message, ensure_ascii=False)}\n\n"
+
+
+        import backoff

@@ -1,5 +1,7 @@
 import json
 import os
+
+from GeoFile.Service.ToolService import AnalysisTools
 from connection_manager import manager
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
@@ -20,27 +22,7 @@ with open('./config.json', 'r', encoding='utf-8') as configFile:
     system_config = json.load(configFile)
 
 
-@tool()
-def search(query: str):
-    """模拟一个搜索工具"""
-    if "上海" in query.lower() or "Shanghai" in query.lower():
-        return "现在30度，有雾."
-    return "现在是35度，阳光明媚。"
-
-
-@tool()
-def draw_boundary(name: str):
-    """
-    在地图上绘制区域边界
-
-    参数：
-        name（str）：区域名
-    """
-    print("adoihawiodhoadhoiahdo1")
-    return "绘制成功"
-
-
-tools = [search, draw_boundary]
+tools=AnalysisTools
 
 llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],
                  base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(tools)
@@ -78,7 +60,5 @@ workflow.add_conditional_edges("agent", should_continue)
 workflow.add_edge("tools", "agent")
 
 memory = MemorySaver()
-Agent_Main = workflow.compile(checkpointer=memory)
 
-
-
+GeoTestAgent = workflow.compile(checkpointer=memory)

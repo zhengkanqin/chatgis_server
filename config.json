@@ -1,9 +1,0 @@
-{
-  "对话大模型名称": "deepseek-chat",
-  "对话大模型密钥": "sk-00d80e327eed4b40952e5ab249398eac",
-  "对话大模型地址": "https://api.deepseek.com",
-  "Embedding模型名称": "text-embedding-v3",
-  "Embedding模型密钥": "sk-25da6ebf963042c7a62d1634933904bf",
-  "Embedding模型地址": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  "向量数据库路径": "chroma_db"
-}
