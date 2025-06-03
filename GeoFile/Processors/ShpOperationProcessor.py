@@ -14,7 +14,7 @@ from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFac
 from GeoFile.Common.Message import success, error
 from GeoFile.Tools.BufferQueryTool import buffer_query_tool
 from GeoFile.Tools.BufferTool import buffer_tool
-from GeoFile.Tools.Shp2GeojsonTool import shp2geojson
+from GeoFile.Tools.Shp2TypeTool import shp2geojson, shp2png
 from GeoFile.Tools.ShpQueryTools import query_tool
 
 
@@ -58,7 +58,7 @@ class BaseOperationProcessor(ABC):
 
 
 class ConvertProcessor(BaseOperationProcessor):
-    """Shp2GeoJSON转换器"""
+    """Shp2Type转换器"""
 
     SUPPORTED_OPERATION = ['convert']
 
@@ -66,13 +66,28 @@ class ConvertProcessor(BaseOperationProcessor):
         gdf = gpd.read_file(self.file_path)
         attributes = self.params.get('attributes', [])
         output_dir = self.params.get('output_path')
+        type_name = self.params.get('type_name')
 
-        output_path, feature_count, attribute_count = shp2geojson(self.file_path, gdf, attributes, output_dir)
-        result = (
-            f"GeoJSON文件已保存至: {output_path}\n"
-            f"要素数量: {feature_count}\n"
-            f"属性字段数量: {attribute_count}"
-        )
+        if type_name == 'geojson':
+            output_path, feature_count, attribute_count = shp2geojson(self.file_path, gdf, attributes, output_dir)
+
+            result = (
+                f"GeoJSON文件已保存至: {output_path}\n"
+                f"要素数量: {feature_count}\n"
+                f"属性字段数量: {attribute_count}"
+            )
+        elif type_name == 'png':
+            output_path, bbox = shp2png(self.file_path, gdf, attributes, output_dir)
+
+            # 解构边界框坐标
+            minx, miny, maxx, maxy = bbox
+
+            result = (
+                f"格式转换文件已保存至: {output_path}\n"
+                f"边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间"
+            )
+        else:
+            raise ValueError(f"暂不支持转换的文件格式: {type_name}")
 
         return result
 
@@ -138,7 +153,8 @@ class BufferQueryProcessor(BaseOperationProcessor):
         # 解构边界框坐标
         minx, miny, maxx, maxy = bbox
 
-        buffer_query_result = buffer_query_tool(self.file_path, buffer_create_ids, query_file_path, target_ids, buffer_distance)
+        buffer_query_result = buffer_query_tool(self.file_path, buffer_create_ids, query_file_path, target_ids,
+                                                buffer_distance)
 
         # 格式化结果字符串
         result = (
