@@ -1,10 +1,10 @@
 # GeoFile/Tools/BufferQueryTool.py
 from typing import List
+
 import geopandas as gpd
+from pyproj import CRS
 
 from GeoFile.Tools.TableExportTool import TableExporterFactory
-import pandas as pd
-from pyproj import CRS
 
 
 def _get_utm_crs(lon: float, lat: float) -> CRS:

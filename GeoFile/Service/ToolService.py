@@ -10,7 +10,7 @@ from GeoFile.Processors.ShpOperationProcessor import ShpProcessorFactory
 @tool()
 async def read_file(file_path: str):
     """
-    读取并解析地理数据文件，提取坐标系、几何类型、属性字段统计等关键特征信息，支持Shp/Excel/Csv/Txt等多种形式
+    读取并解析地理数据文件，提取关键特征信息，支持Shp/Excel/Csv/Txt等多种形式
 
     参数:
     - file_path: 需要读取的文件路径
@@ -66,18 +66,22 @@ async def read_file(file_path: str):
 
 
 @tool()
-async def to_geojson(file_path: str,
-                     attributes: Optional[List[str]] = None,
-                     output_path: Optional[str] = None
-                     ):
+async def shp_to_type(file_path: str,
+                      type_name: str,
+                      attributes: Optional[List[str]] = None,
+                      output_path: Optional[str] = None
+                      ):
     """
-    将SHP转换为GeoJSON格式，可选择保留指定属性字段
+    将SHP转换为其他格式，支持GeoJSON/PNG等格式，可选择保留指定属性字段
 
     参数:
     - file_path: SHP文件路径
-    - attributes: 需要处理的属性字段列表(空列表表示全部属性)
+    - type_name: 转换的目标格式: 'geojson'=GeoJSON格式, 'png'=PNG格式
+    - attributes: 需要处理的属性字段列表(空列表表示全部属性):
+        type_name = "geojson": attributes表示转换时需要保留的属性字段
+        type_name = "png": attributes表示转换时用以着色的数值或分类字段
     """
-    params = {}
+    params = {'type_name': type_name}
     if attributes:
         params.update({"attributes": attributes})
     if output_path:
@@ -123,10 +127,7 @@ async def buffer_create(file_path: str,
                         output_path: Optional[str] = None
                         ):
     """
-    为指定要素创建缓冲区，输出:
-       - GeoJSON格式的缓冲区多边形
-       - 保存为新的SHP文件
-       - 地图PNG图片和定位点坐标
+    为指定要素创建缓冲区
 
     参数:
     - file_path: 缓冲区创建要素的SHP文件路径
@@ -147,18 +148,14 @@ async def buffer_create(file_path: str,
 @tool()
 async def buffer_query(file_path: str,
                        buffer_create_ids: List[int],
-                    query_file_path: str,
+                       query_file_path: str,
                        target_ids: List[int],
                        buffer_distance: float,
                        buffer_color: Optional[str] = "#66CCFF",
                        output_path: Optional[str] = None
                        ):
     """
-    以指定要素创建缓冲区，并查询另一些要素是否处在缓冲区内，输出:
-       - GeoJSON格式的缓冲区多边形
-       - 保存为新的SHP文件
-       - 地图PNG图片和定位点坐标
-       - 查询结果
+    以指定要素创建缓冲区，并查询另一些要素是否处在缓冲区内
 
     参数:
     - file_path: 缓冲区创建要素的SHP文件路径
@@ -179,4 +176,5 @@ async def buffer_query(file_path: str,
 
     return await ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
 
-AnalysisTools = [read_file, to_geojson, attribute_query, buffer_query]
+
+AnalysisTools = [read_file, shp_to_type, attribute_query, buffer_query]
