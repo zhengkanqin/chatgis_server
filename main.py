@@ -10,6 +10,7 @@ from Vector_DB_Memory import VectorDBMemory
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List, Union
 import base64
+import time
 
 
 app = FastAPI()
@@ -143,6 +144,77 @@ async def chat(request: ChatRequest):
     print(request.layers)
     print(request.mapinfo)
     return StreamingResponse(event_generator(request.query,request.filelist,request.layers,request.mapinfo),media_type="text/event-stream")
+
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------知识库-----------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------------------------
+KnowledgeMemory = VectorDBMemory(collection_name="Knowledge")
+
+class KnowledgeContent(BaseModel):
+    content: str
+
+class KnowledgeDeleteRequest(BaseModel):
+    timestamp: str
+
+class KnowledgeQueryRequest(BaseModel):
+    query: str
+    n_results: Optional[int] = 5
+
+@app.post("/add_knowledge")
+async def add_knowledge(content: KnowledgeContent):
+    # 创建带有时间戳的元数据
+    metadata = {
+        "timestamp": str(time.time())
+    }
+    # 创建 MemoryContent 对象
+    memory_content = MemoryContent(
+        content=content.content,
+        metadata=metadata
+    )
+    # 添加到向量数据库
+    await KnowledgeMemory.add(memory_content)
+    return {"status": "success", "message": "知识已成功添加到知识库"}
+
+@app.get("/get_knowledge")
+async def get_knowledge(page: int = 1, page_size: int = 100):
+    result = await KnowledgeMemory.get_paginated_data(page=page, page_size=page_size)
+    return result
+
+@app.post("/delete_knowledge")
+async def delete_knowledge(request: KnowledgeDeleteRequest):
+    # 根据时间戳删除知识
+    metadata_filter = {"timestamp": request.timestamp}
+    await KnowledgeMemory.delete_by_metadata(metadata_filter)
+    return {"status": "success", "message": f"已删除时间戳为 {request.timestamp} 的知识"}
+
+@app.post("/query_knowledge")
+async def query_knowledge(request: KnowledgeQueryRequest):
+    """
+    语义搜索查询知识库
+
+    Args:
+        query: 查询文本
+        n_results: 返回结果数量，默认5条
+    """
+    result = await KnowledgeMemory.query(
+        query=request.query,
+        n_results=request.n_results
+    )
+    return {
+        "status": "success",
+        "results": [
+            {
+                "content": item.content,
+                "metadata": item.metadata
+            }
+            for item in result.results
+        ]
+    }
 
 
 

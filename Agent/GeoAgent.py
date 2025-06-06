@@ -1,7 +1,8 @@
 import json
 import os
 
-from GeoFile.Service.ToolService import AnalysisTools
+from GeoFile.Service.ToolService import read_file, to_geojson, attribute_query, buffer_query
+from RAG import Query_GeoFile
 from connection_manager import manager
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
@@ -13,6 +14,8 @@ from langgraph.types import Command, interrupt
 from Agent.GIS_State import Layer, GIS_State
 from typing import List
 
+from map import draw_boundary, draw_point, draw_line, draw_polygon, draw_circle, draw_label, draw_geojson, draw_image
+
 os.environ["LANGSMITH_TRACING"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = "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"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
@@ -22,7 +25,9 @@ with open('./config.json', 'r', encoding='utf-8') as configFile:
     system_config = json.load(configFile)
 
 
-tools=AnalysisTools
+# tools=AnalysisTools
+
+tools = [draw_boundary,draw_circle,draw_label,draw_geojson,draw_image,read_file,to_geojson,attribute_query,buffer_query,Query_GeoFile]
 
 llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],
                  base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(tools)
@@ -62,3 +67,8 @@ workflow.add_edge("tools", "agent")
 memory = MemorySaver()
 
 GeoTestAgent = workflow.compile(checkpointer=memory)
+
+
+
+
+
