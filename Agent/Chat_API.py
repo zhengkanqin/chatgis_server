@@ -13,9 +13,11 @@ from Agent.GeoAgent import GeoTestAgent
 # 模块级变量，用于存储中断状态
 is_interrupted = False
 interrupt_query = ""
-
 # workAgent = Agent_Main
 workAgent = GeoTestAgent
+
+UserLayers = []
+
 
 
 def safe_json_serialize(obj):
@@ -75,7 +77,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
 # --------------------------------------------------------------------------------------------
 
 async def event_generator(q: str,files: Optional[List[str]] = None,layers: Optional[List[Layer]] = None,mapInfo: Optional[str] = None,) -> AsyncGenerator[str, None]:
-    global is_interrupted, interrupt_query
+    global is_interrupted, interrupt_query,UserLayers
 
     # 如果mapInfo不为None，则读取本地图片文件，编码为base64，构造HumanMessage
     map_message = None
@@ -112,7 +114,38 @@ async def event_generator(q: str,files: Optional[List[str]] = None,layers: Optio
                 file_messages.append(HumanMessage(content=f"文件读取失败：{file_url}，错误：{str(e)}"))
         # 将文件消息添加到消息列表的开头
         messages = file_messages + messages
-    
+    UserLayers = []
+    if layers:
+        UserLayers = layers
+        print("有图层传入")
+
+        short_layers = []
+        long_layers = []
+        short_layers_messages = []
+        long_layers_messages = []
+
+        for layer in layers:
+            if len(json.dumps(layer)) < 1000:
+                short_layers.append(layer)
+            else:
+                long_layers.append(layer)
+
+        for short_layer in short_layers:
+            msg = f"图层名：{short_layer['name']}，图层类型：{short_layer['type']}，图层数据：{short_layer['data']}"
+            short_layers_messages.append(msg)
+            print(msg)
+
+        for long_layer in long_layers:
+            msg = f"图层名：{long_layer['name']}，图层类型：{long_layer['type']}，图层数据：数据过大，不显示。"
+            long_layers_messages.append(msg)
+            print(msg)
+
+        # 拼接所有图层信息
+        all_layer_info = "\n".join(short_layers_messages + long_layers_messages)
+        final_message = "用户指定了以下图层请求对话：\n" + all_layer_info
+        final_layer_message = HumanMessage(content=final_message)
+        messages = [final_layer_message] + messages
+
     # 如果处于中断状态，直接使用Command恢复会话
     if is_interrupted:
         try:
@@ -184,4 +217,3 @@ async def event_generator(q: str,files: Optional[List[str]] = None,layers: Optio
         yield f"data: {json.dumps(end_message, ensure_ascii=False)}\n\n"
 
 
-        import backoff
