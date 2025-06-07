@@ -182,9 +182,9 @@ async def draw_geojson(geojson: str, name: str, style: str, properties:str):
     在用户可见的地图上绘制一个GeoJSON图层
 
     参数:
-    - geojson: str GeoJSON格式数据、GeoJSON链接、GeoJSON路径均可
+    - geojson: str GeoJSON格式数据、GeoJSON链接、GeoJSON路径均可，不允许直接输入shp，需要进行转换。
     - name: str GeoJSON图层的名字
-    - style: str 默认不写，可以输入部分json，可选的属性字段，默认为{strokeColor: "#0000ff",strokeWeight: 2,strokeOpacity: 0.8,fillColor: "#ffcccc",fillOpacity: 0.4,enableEditing: false,enableClicking: true}，
+    - style: str 默认不写，
     - properties: str 可以指定用于数值排序的属性，根据需要选择是否填写
     """
 

@@ -1,4 +1,6 @@
 # backend/main.py
+import json
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -217,7 +219,22 @@ async def query_knowledge(request: KnowledgeQueryRequest):
     }
 
 
-
+@app.get("/draw_json")
+async def draw_json():
+    CommandEvent = {
+        "type": "map",
+        "operation": "draw-geojson",
+        "data": {
+            "geojson": "D:\\Temp\\chatgis_server\\GeoFile\\Result\\湖北省市级行政区划_20250607_202230.geojson",
+            "name": "tets",
+            "style": "",
+            "properties": ""
+        }
+    }
+    print(CommandEvent)
+    json_str = json.dumps(CommandEvent)  # 转成 JSON 字符串
+    await manager.send_message(json_str)
+    return "ok"
 
 
 

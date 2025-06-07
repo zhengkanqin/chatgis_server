@@ -4,6 +4,7 @@ import os
 from GeoFile.Service.ToolService import read_file, attribute_query, buffer_query, shp_to_type
 from GeoFile.Tools.BufferTool import create_buffer_png
 from RAG import Query_GeoFile
+from baidumaptools import map_reverse_geocode
 from connection_manager import manager
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
@@ -28,7 +29,7 @@ with open('./config.json', 'r', encoding='utf-8') as configFile:
 
 # tools=AnalysisTools
 
-tools = [draw_boundary,draw_circle,draw_label,draw_geojson,draw_image,read_file,shp_to_type,attribute_query,buffer_query,buffer_query,Query_GeoFile]
+tools = [draw_boundary,draw_circle,draw_label,draw_geojson,draw_image,read_file,shp_to_type,attribute_query,buffer_query,buffer_query,Query_GeoFile,map_reverse_geocode]
 
 llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],
                  base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(tools)
