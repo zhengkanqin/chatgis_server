@@ -1,28 +1,16 @@
-# GeoFile/Common/ErrorsHandler/ShpOperationErrors.py
+# GeoFile/Common/ErrorsHandler/SpatialOperationErrors.py
 """
-Shp文件操作异常处理模块
+空间操作异常处理模块
 
-为Shp文件操作中出现的异常提供合适的处理
+为空间操作中出现的异常提供合适的处理
 """
-import logging
-import os
-import shutil
-import tempfile
-import geopandas as gpd
-
-from pyproj.exceptions import CRSError
-from pyogrio.errors import DataSourceError
-from pandas.errors import EmptyDataError, ParserError
-
-from connection_manager import manager
 
 
-class ShpBaseErrorHandler:
+class SpatialBaseErrorHandler:
     """异常处理基类"""
     ERROR_TYPE = Exception  # 基类默认处理所有异常
 
-    def __init__(self, file_path, operation, params, error_obj):
-        self.file_path = file_path
+    def __init__(self, operation, params, error_obj):
         self.operation = operation
         self.params = params
         self.error_obj = error_obj
@@ -53,7 +41,7 @@ class ShpBaseErrorHandler:
         return "\n".join(sections)
 
 
-class FileNotFoundHandler(ShpBaseErrorHandler):
+class FileNotFoundHandler(SpatialBaseErrorHandler):
     """文件不存在异常处理"""
     ERROR_TYPE = FileNotFoundError
 
@@ -61,7 +49,6 @@ class FileNotFoundHandler(ShpBaseErrorHandler):
         self.error_info.update({
             "原因": "文件路径不存在",
             "技术诊断": [
-                f"请求路径: {self.file_path}",
                 f"系统报错: {str(self.error_obj)}",
                 "可能原因:",
                 "1. 文件路径包含特殊字符",
@@ -76,7 +63,7 @@ class FileNotFoundHandler(ShpBaseErrorHandler):
         })
 
 
-class ValueErrorHandler(ShpBaseErrorHandler):
+class ValueErrorHandler(SpatialBaseErrorHandler):
     """数值或参数异常处理"""
     ERROR_TYPE = ValueError
 
@@ -85,18 +72,8 @@ class ValueErrorHandler(ShpBaseErrorHandler):
         reasons = []
         solutions = []
 
-        if "操作类型" in error_msg:
-            reasons.append(error_msg)
-            solutions.append("请使用支持的操作方式！")
-        elif "文件类型" in error_msg:
-            reasons.append(error_msg)
-            solutions.append("仅支持使用Shp文件格式！")
-        elif "查询目标类型" in error_msg:
-            reasons.append(error_msg)
-            solutions.append("请检查对应参数是否是四种查询中的一种！")
-        else:
-            reasons.append(error_msg)
-            solutions.append("请检查该值是否合规！")
+        reasons.append(error_msg)
+        solutions.append("请检查该值是否合规！")
 
         self.error_info.update({
             "原因": "文件重要值错误",
@@ -105,7 +82,7 @@ class ValueErrorHandler(ShpBaseErrorHandler):
         })
 
 
-class ShpOperationErrorFactory:
+class SpatialOperationErrorFactory:
     """异常处理工厂"""
     HANDLERS = {
         handler.ERROR_TYPE: handler
@@ -116,9 +93,9 @@ class ShpOperationErrorFactory:
     }
 
     @classmethod
-    def get_handler(cls, file_path, operation, params, error_obj):
+    def get_handler(cls, operation, params, error_obj):
         """获取匹配的处理器"""
         for err_class, handler in cls.HANDLERS.items():
             if isinstance(error_obj, err_class):
-                return handler(file_path, operation, params, error_obj)
-        return ShpBaseErrorHandler(file_path, operation, params, error_obj)
+                return handler(operation, params, error_obj)
+        return SpatialBaseErrorHandler(operation, params, error_obj)

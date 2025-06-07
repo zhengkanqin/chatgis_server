@@ -3,8 +3,10 @@ from typing import Optional, List, Dict, Any, Union
 
 from langchain_core.tools import tool
 
+from GeoFile.Common.ErrorsHandler.SpatialOperationErrors import SpatialOperationErrorFactory
 from GeoFile.Processors.DataInputProcessor import FileProcessorFactory
 from GeoFile.Processors.ShpOperationProcessor import ShpProcessorFactory
+from GeoFile.Processors.SpatialOperationProcessor import SpatialProcessorFactory
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 
 
@@ -181,18 +183,19 @@ async def buffer_query(file_path: str,
 @tool()
 async def spatial_query(source: Union[str, Dict],
                         query_source: Union[str, Dict],
-                        queried_condition: Optional[Dict[str, Any]] = None):
+                        queried_condition: Optional[Dict[str, Any]] = None,
+                        relation: Optional[str] = "intersects"):
     """
     执行空间查询：检查源要素是否与查询空间对象存在空间关系
 
     参数:
     - source: 待查询的数据源，支持以下格式：
-        * 文件路径: SHP/GeoJSON等地理文件路径
+        * 文件路径: SHP/GeoJSON/GPKG等地理文件路径
         * GeoJSON对象: {'type': 'FeatureCollection', ...}
         * 图层引用: "[$layer]图层数据[$layer]"
 
     - query_source: 空间查询对象，支持以下格式：
-        * 文件路径: SHP/GeoJSON等地理文件路径
+        * 文件路径: SHP/GeoJSON/GPKG等地理文件路径
         * GeoJSON对象: {'type': 'Polygon', 'coordinates': [...]}
         * 图层引用: "[$layer]图层数据[$layer]"
         * 缓冲区参数: {'type': 'buffer', 'source': 源要素(GeoJSON对象), 'distance': 距离(米)}
@@ -203,13 +206,16 @@ async def spatial_query(source: Union[str, Dict],
             {"type": "building"}  # 简单等于条件
             {"height": lambda h: h > 20}  # 函数表达式条件
             {"name": ["学校", "医院"]}  # 包含在列表中
+    - relation: 空间关系类型 (可选，默认为"intersects")
+            - 支持: "intersects", "contains", "within", "touches", "crosses", "overlaps"
     """
     params = {}
     params.update({"query_source": query_source})
+    params.update({"relation": relation})
     if queried_condition:
         params.update({"queried_condition": queried_condition})
 
-    return await ShpProcessorFactory.create_processor("spatial_query", source, params)
+    return await SpatialProcessorFactory.create_processor("spatial_query", source, params)
 
 
 AnalysisTools = [read_file, shp_to_type, attribute_query, buffer_query, spatial_query]

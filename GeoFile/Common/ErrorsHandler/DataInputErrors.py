@@ -17,7 +17,7 @@ from pandas.errors import EmptyDataError, ParserError
 from connection_manager import manager
 
 
-class BaseErrorHandler:
+class DataInputBaseErrorHandler:
     """异常处理基类"""
     ERROR_TYPE = Exception  # 基类默认处理所有异常
 
@@ -51,7 +51,7 @@ class BaseErrorHandler:
         return "\n".join(sections)
 
 
-class FileNotFoundHandler(BaseErrorHandler):
+class FileNotFoundHandler(DataInputBaseErrorHandler):
     """文件不存在异常处理"""
     ERROR_TYPE = FileNotFoundError
 
@@ -74,7 +74,7 @@ class FileNotFoundHandler(BaseErrorHandler):
         })
 
 
-class ValueErrorHandler(BaseErrorHandler):
+class ValueErrorHandler(DataInputBaseErrorHandler):
     """数值或参数异常处理"""
     ERROR_TYPE = ValueError
 
@@ -105,7 +105,7 @@ class ValueErrorHandler(BaseErrorHandler):
         })
 
 
-class CRSErrorHandler(BaseErrorHandler):
+class CRSErrorHandler(DataInputBaseErrorHandler):
     """坐标系异常处理"""
     ERROR_TYPE = CRSError
 
@@ -185,7 +185,7 @@ class CRSErrorHandler(BaseErrorHandler):
         return gdf
 
 
-class DataSourceErrorHandler(BaseErrorHandler):
+class DataSourceErrorHandler(DataInputBaseErrorHandler):
     """数据源异常处理"""
     ERROR_TYPE = DataSourceError
 
@@ -216,7 +216,7 @@ class DataSourceErrorHandler(BaseErrorHandler):
         })
 
 
-class CSVReadErrorHandler(BaseErrorHandler):
+class CSVReadErrorHandler(DataInputBaseErrorHandler):
     """CSV读取异常处理"""
     ERROR_TYPE = (ParserError, EmptyDataError)
 
@@ -235,7 +235,7 @@ class CSVReadErrorHandler(BaseErrorHandler):
         })
 
 
-class ExcelReadErrorHandler(BaseErrorHandler):
+class ExcelReadErrorHandler(DataInputBaseErrorHandler):
     """Excel读取异常处理"""
     ERROR_TYPE = (ParserError, PermissionError)
 
@@ -274,4 +274,4 @@ class GeoFileErrorFactory:
         for err_class, handler in cls.HANDLERS.items():
             if isinstance(error_obj, err_class):
                 return handler(file_path, error_obj)
-        return BaseErrorHandler(file_path, error_obj)
+        return DataInputBaseErrorHandler(file_path, error_obj)

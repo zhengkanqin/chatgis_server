@@ -159,8 +159,8 @@ class BufferQueryProcessor(BaseOperationProcessor):
         # 格式化结果字符串
         result = (
             f"缓冲区GeoJSON文件已保存至: {geojson_saved_path}\n"
-            f"缓冲区PNG文件已保存至: {png_saved_path}\n"  # 添加了缺失的换行符
-            f"缓冲区SHP文件已保存至: {shp_saved_path}\n"  # 添加了换行符
+            f"缓冲区PNG文件已保存至: {png_saved_path}\n"
+            f"缓冲区SHP文件已保存至: {shp_saved_path}\n"
             f"缓冲区边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间\n"
             f"缓冲区查询成功: {buffer_query_result}"
         )
@@ -174,7 +174,8 @@ class ShpProcessorFactory:
     OPERATION_PROCESSORS = {
         'convert': ConvertProcessor,
         'query': QueryProcessor,
-        'buffer': BufferProcessor
+        'buffer': BufferProcessor,
+        'buffer_query': BufferQueryProcessor
     }
 
     @classmethod
