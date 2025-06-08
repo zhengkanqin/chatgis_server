@@ -22,7 +22,6 @@ class GIS_State(TypedDict):
     sender:str
     mapMessage:HumanMessage
     layers:List[Layer]
-
 def create_default_state() -> GIS_State:
     """创建默认状态"""
     return {

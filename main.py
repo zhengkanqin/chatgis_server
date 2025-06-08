@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List, Union
 import base64
 import time
+from Agent.FileReadAgent import read_file
 
 
 app = FastAPI()
@@ -132,6 +133,20 @@ async def query_memory(request: QueryRequest):
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
 
+@app.get("/readGeoFile")
+async def readGeoFile(q: str):
+    print(q)
+    """
+    读取并分析地理文件
+
+    Args:
+        q: 文件路径（查询参数）
+    """
+
+    result = await read_file(q)
+    return result
+
+
 
 
 class ChatRequest(BaseModel):
@@ -219,25 +234,10 @@ async def query_knowledge(request: KnowledgeQueryRequest):
     }
 
 
-@app.get("/draw_json")
-async def draw_json():
-    CommandEvent = {
-        "type": "map",
-        "operation": "draw-geojson",
-        "data": {
-            "geojson": "D:\\Temp\\chatgis_server\\GeoFile\\Result\\湖北省市级行政区划_20250607_202230.geojson",
-            "name": "tets",
-            "style": "",
-            "properties": ""
-        }
-    }
-    print(CommandEvent)
-    json_str = json.dumps(CommandEvent)  # 转成 JSON 字符串
-    await manager.send_message(json_str)
-    return "ok"
 
 
 
+import pyogrio
 
 
 
@@ -252,4 +252,4 @@ if __name__ == "__main__":
         uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
-import  six
+
