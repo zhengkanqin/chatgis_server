@@ -1,4 +1,5 @@
 # GeoFile/Tools/GeographicObjectTool.py
+import json
 import os
 import re
 from typing import Union, Dict, Any, Optional
@@ -38,25 +39,38 @@ def read_geographic_data(
         当输入类型不支持或无法识别时抛出ValueError
     """
     # 处理图层引用
-    if isinstance(source, str) and re.match(r"^\[\$layer\].*\[\$layer\]$", source):
+    if isinstance(source, str) and re.match(r"^\[\$layer].*\[\$layer]$", source):
         layer_name = source[8:-8]  # 移除[$layer]标记
         gdf = _load_layer(layer_name)
 
-    # 处理缓冲区参数
-    elif isinstance(source, dict) and source.get('type') == 'buffer':
-        gdf = _create_buffer(source)
-
-    # 处理字符串路径类型
+    # 处理字符串形式的输入（可能是文件路径或JSON字符串）
     elif isinstance(source, str):
-        gdf = _load_file(source)
+        try:
+            # 尝试将字符串解析为JSON对象
+            parsed_source = json.loads(source)
+            if isinstance(parsed_source, dict):
+                # 如果是字典类型，则根据内容进一步处理
+                if parsed_source.get('type') == 'buffer':
+                    gdf = _create_buffer(parsed_source)
+                else:
+                    gdf = _load_geojson_dict(parsed_source)
+            else:
+                # 不是字典则当作文件路径处理
+                gdf = _load_file(source)
+        except json.JSONDecodeError:
+            # JSON解析失败，当作普通文件路径
+            gdf = _load_file(source)
 
-    # 处理字典类型 (GeoJSON)
+    # 处理直接传入的字典对象
     elif isinstance(source, dict):
-        gdf = _load_geojson_dict(source)
+        if source.get('type') == 'buffer':
+            gdf = _create_buffer(source)
+        else:
+            gdf = _load_geojson_dict(source)
 
     else:
         raise TypeError(f"Unsupported source type: {type(source)}. "
-                        "Expected str (file path or layer reference) or dict (GeoJSON or buffer params)")
+                        "Expected str (file path, layer reference or JSON) or dict.")
 
     # 应用条件过滤
     if condition:
