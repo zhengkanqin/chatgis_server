@@ -7,7 +7,7 @@ from Agent.Agent_Main import Agent_Main, workflow
 import json
 import base64
 import requests
-from Globals import UserLayers
+from Agent.Globals import UserLayers
 from Agent.GeoAgent import GeoTestAgent
 from Agent.MultiAgent import MultiAgent
 

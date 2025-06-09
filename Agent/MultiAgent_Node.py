@@ -41,8 +41,6 @@ analysis_tools = [
     read_file,
     shp_to_type,
     attribute_query,
-    buffer_create,
-    buffer_query,
     spatial_query
 ]
 analysis_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(analysis_tools)
