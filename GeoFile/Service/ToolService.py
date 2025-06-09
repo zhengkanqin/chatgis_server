@@ -3,11 +3,9 @@ from typing import Optional, List, Dict, Any, Union
 
 from langchain_core.tools import tool
 
-from GeoFile.Common.ErrorsHandler.SpatialOperationErrors import SpatialOperationErrorFactory
 from GeoFile.Processors.DataInputProcessor import FileProcessorFactory
 from GeoFile.Processors.ShpOperationProcessor import ShpProcessorFactory
 from GeoFile.Processors.SpatialOperationProcessor import SpatialProcessorFactory
-from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 
 
 @tool()
