@@ -7,7 +7,7 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point, LineString, Polygon
 
-from Agent.Chat_API import UserLayers
+from Agent.Globals import UserLayers
 
 
 def read_geographic_data(
