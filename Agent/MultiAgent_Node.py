@@ -4,10 +4,9 @@ import os
 import re
 
 
-from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches, \
-    prompt_summary, prompt_reflection
+from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches,prompt_summary, prompt_reflection
 from Agent.MultiAgent_func import sender_info
-from GeoFile.Service.ToolService import read_file, shp_to_type, attribute_query, buffer_query, buffer_create
+from GeoFile.Service.ToolService import read_file, shp_to_type, attribute_query, buffer_query, buffer_create,spatial_query
 from RAG import Query_GeoFile, Query_Knowledge
 from connection_manager import manager
 from langchain_core.messages import HumanMessage, SystemMessage ,AIMessage
@@ -43,7 +42,8 @@ analysis_tools = [
     shp_to_type,
     attribute_query,
     buffer_create,
-    buffer_query
+    buffer_query,
+    spatial_query
 ]
 analysis_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(analysis_tools)
 #------------------------------------------------------------

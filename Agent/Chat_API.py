@@ -7,7 +7,7 @@ from Agent.Agent_Main import Agent_Main, workflow
 import json
 import base64
 import requests
-
+from Globals import UserLayers
 from Agent.GeoAgent import GeoTestAgent
 from Agent.MultiAgent import MultiAgent
 
@@ -17,7 +17,6 @@ interrupt_query = ""
 # workAgent = Agent_Main
 # workAgent = GeoTestAgent
 workAgent = MultiAgent
-UserLayers = []
 
 
 
@@ -131,7 +130,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
 async def event_generator(q: str, files: Optional[List[str]] = None,
                           layers: Optional[List[Layer]] = None,
                           mapInfo: Optional[str] = None) -> AsyncGenerator[str, None]:
-    global is_interrupted, interrupt_query, UserLayers
+    global is_interrupted, interrupt_query
 
     try:
         map_message = None
@@ -159,9 +158,9 @@ async def event_generator(q: str, files: Optional[List[str]] = None,
                     file_messages.append(HumanMessage(content=f"文件读取失败：{file_url}，错误：{str(e)}"))
             messages = file_messages + messages
 
-        UserLayers = []
+        UserLayers.clear()
         if layers:
-            UserLayers = layers
+            UserLayers.extend(layers)
             short_layers, long_layers = [], []
             for layer in layers:
                 if len(json.dumps(layer)) < 1000:

@@ -1,6 +1,9 @@
 # backend/main.py
 import json
-
+import os
+import sys
+import subprocess
+import signal
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -248,6 +251,25 @@ import pyogrio
 #-------------------------------------------------------------------服务-------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------------------------
+@app.get("/restart")
+async def restart_server():
+    """
+    重启服务器进程
+    """
+    try:
+        # 获取当前脚本的路径
+        script = os.path.abspath(__file__)
+        # 使用subprocess启动新进程
+        subprocess.Popen([sys.executable, script])
+        # 获取当前进程ID
+        pid = os.getpid()
+        # 发送终止信号
+        os.kill(pid, signal.SIGTERM)
+        return {"status": "success", "message": "服务器正在重启"}
+    except Exception as e:
+        return {"status": "error", "message": f"重启失败: {str(e)}"}
+
+
 if __name__ == "__main__":
         uvicorn.run(app, host="127.0.0.1", port=8000)
 
