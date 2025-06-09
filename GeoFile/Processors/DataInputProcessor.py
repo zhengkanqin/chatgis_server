@@ -99,6 +99,7 @@ class ShpProcessor(BaseFileProcessor):
                 continue
 
             field_type = classify_field_type(gdf[col].dtype, gdf[col])
+            print(col.lower(), field_type)
             stats = {}
 
             # 数值型处理
@@ -176,9 +177,6 @@ class ShpProcessor(BaseFileProcessor):
         # 发送处理结果
         result_msg = "\n".join(output)
         await manager.send_message(result_msg)
-
-        # 记录原始数据
-        logging.info(f"SHP处理原始数据：{json.dumps(summary, indent=2)}")
 
         return result_msg
 

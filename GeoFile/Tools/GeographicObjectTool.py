@@ -39,7 +39,7 @@ def read_geographic_data(
     """
     # 处理图层引用
     if isinstance(source, str) and re.match(r"^\[\$layer\].*\[\$layer\]$", source):
-        layer_name = source[9:-9]  # 移除[$layer]标记
+        layer_name = source[8:-8]  # 移除[$layer]标记
         gdf = _load_layer(layer_name)
 
     # 处理缓冲区参数
@@ -104,7 +104,10 @@ def _load_geojson_dict(geojson_dict: Dict) -> gpd.GeoDataFrame:
 def _load_layer(layer_name: str) -> gpd.GeoDataFrame:
     """从图层仓库加载图层数据"""
     # 从图层仓库获取数据
-    layer_data = UserLayers.get(layer_name)
+    layer_data = next(
+        (layer for layer in UserLayers if layer.get('name') == layer_name),
+        None
+    )
     if not layer_data:
         raise ValueError(f"Layer not found: {layer_name}")
 

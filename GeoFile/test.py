@@ -1,17 +1,22 @@
 import asyncio
 import json
 
-from GeoFile.Service.ToolService import attribute_query, shp_to_type
+from GeoFile.Service.ToolService import attribute_query, shp_to_type, read_file
 
 
 async def main():
-    # 测试转换操作（convert）
-    convert_result = await shp_to_type.ainvoke({
-        "file_path": "GeoFile/AAATestFile/Shp/防火站.shp",
-        "type_name": "png",
-        "attributes": []
+    # 测试阅读操作（convert）
+    convert_result = await read_file.ainvoke({
+        "file_path": "GeoFile/AAATestFile/Shp/边界.shp"
     })
     print(json.dumps(convert_result, indent=2, ensure_ascii=False))
+    # 测试转换操作（convert）
+    # convert_result = await shp_to_type.ainvoke({
+    #     "file_path": "GeoFile/AAATestFile/Shp/防火站.shp",
+    #     "type_name": "png",
+    #     "attributes": []
+    # })
+    # print(json.dumps(convert_result, indent=2, ensure_ascii=False))
 
     # 测试属性查询操作（query）
     # query_result = await attribute_query.ainvoke({
