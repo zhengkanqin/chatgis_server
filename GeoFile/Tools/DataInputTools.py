@@ -18,8 +18,5 @@ def classify_field_type(dtype, data):
     elif np.issubdtype(dtype, np.datetime64) or isinstance(data.iloc[0], datetime):
         return "Date"
     elif dtype == object:
-        sample = data.dropna().iloc[0] if not data.empty else ""
-        if isinstance(sample, str) and len(sample.encode('utf-8')) < 254:
-            return "Text"
-        return "BLOB"  # 实际shapefile不支持，保留识别能力
+        return "Text"
     return "Unknown"
