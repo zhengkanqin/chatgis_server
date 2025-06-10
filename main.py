@@ -138,14 +138,6 @@ async def query_memory(request: QueryRequest):
 
 @app.get("/readGeoFile")
 async def readGeoFile(q: str):
-    print(q)
-    """
-    读取并分析地理文件
-
-    Args:
-        q: 文件路径（查询参数）
-    """
-
     result = await read_file(q)
     return result
 

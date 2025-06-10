@@ -40,7 +40,7 @@ async def Query_Knowledge(keyword: str, num: int):
         n_results=num
     )
     return {
-        "results": [
+        "knowledge": [
             {
                 "content": item.content
             }
