@@ -53,7 +53,7 @@ def read_geographic_data(
     elif isinstance(source, str):
         try:
             # 尝试将字符串解析为JSON对象
-            parsed_source = json.loads(source)
+            parsed_source = safe_json_parse(source)
             if isinstance(parsed_source, dict):
                 # 如果是字典类型，则根据内容进一步处理
                 if parsed_source.get('type') == 'buffer':
@@ -100,13 +100,12 @@ def _load_file(path: str) -> gpd.GeoDataFrame:
 
     if ext in vector_formats:
         # 尝试不同编码读取矢量文件
-        encodings_to_try = ['utf-8', 'gbk', 'gb18030', 'big5', 'latin1', 'cp1252']
-
-        for encoding in encodings_to_try:
-            try:
-                gdf = gpd.read_file(path, encoding=encoding)
-            except UnicodeDecodeError:
-                continue
+        # encodings_to_try = ['utf-8', 'GB18030', 'gbk', 'big5', 'latin1', 'cp1252']
+        # for encoding in encodings_to_try:
+        try:
+            gdf = gpd.read_file(path, encoding="utf-8")
+        except UnicodeDecodeError:
+            gdf = gpd.read_file(path, encoding="GB18030")
     else:
         raise ValueError(f"Unsupported file extension: {ext}. "
                          "Supported: .shp, .geojson, .json")
@@ -283,3 +282,10 @@ def _ensure_valid_gdf(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         gdf = gdf.set_crs(epsg=4326)
 
     return gdf
+
+
+def safe_json_parse(json_str):
+    # 修复单引号问题
+    json_str = json_str.replace("'", '"')
+
+    return json.loads(json_str)

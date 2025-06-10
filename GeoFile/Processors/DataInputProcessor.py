@@ -16,6 +16,7 @@ from GeoFile.Common.ErrorsHandler.DataInputErrors import GeoFileErrorFactory
 from GeoFile.Common.Message import success
 from GeoFile.Common.Message import error
 from GeoFile.Tools.DataInputTools import classify_field_type
+from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from connection_manager import manager
 
 
@@ -54,10 +55,10 @@ class BaseFileProcessor(ABC):
 class ShpProcessor(BaseFileProcessor):
     """Shapefile处理器"""
 
-    SUPPORTED_EXTENSIONS = ['.shp']
+    SUPPORTED_EXTENSIONS = ['.shp', '.json', '.geojson']
 
     async def core(self):
-        gdf = gpd.read_file(self.file_path)
+        gdf = read_geographic_data(self.file_path)
         return await self.process(gdf)
 
     async def process(self, gdf):

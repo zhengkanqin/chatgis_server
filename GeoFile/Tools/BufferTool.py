@@ -11,6 +11,8 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon as MplPolygon
 from pyproj import CRS
 
+from GeoFile.Tools.GeographicObjectTool import read_geographic_data
+
 # 确保使用Agg后端，避免GUI依赖
 matplotlib.use('Agg')
 
@@ -32,7 +34,7 @@ def buffer_tool(
     - output_path: 输出路径(可选)
     """
     # 读取SHP文件
-    gdf = gpd.read_file(file_path)
+    gdf = read_geographic_data(file_path)
 
     # 验证输入
     if not buffer_create_ids:

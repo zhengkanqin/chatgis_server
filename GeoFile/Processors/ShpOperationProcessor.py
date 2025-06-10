@@ -14,6 +14,7 @@ from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFac
 from GeoFile.Common.Message import success, error
 from GeoFile.Tools.BufferQueryTool import buffer_query_tool
 from GeoFile.Tools.BufferTool import buffer_tool
+from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from GeoFile.Tools.Shp2TypeTool import shp2geojson, shp2png
 from GeoFile.Tools.ShpQueryTools import query_tool
 
@@ -30,6 +31,7 @@ class BaseOperationProcessor(ABC):
         :param params: 操作参数
         """
         self.file_path = os.path.abspath(file_path)
+        self.gdf = read_geographic_data(file_path)
         self.operation = operation
         self.params = params or {}
         self._validate()
@@ -63,7 +65,7 @@ class ConvertProcessor(BaseOperationProcessor):
     SUPPORTED_OPERATION = ['convert']
 
     async def core(self):
-        gdf = gpd.read_file(self.file_path)
+        gdf = self.gdf
         attributes = self.params.get('attributes', [])
         output_dir = self.params.get('output_path')
         type_name = self.params.get('type_name')
@@ -98,7 +100,7 @@ class QueryProcessor(BaseOperationProcessor):
     SUPPORTED_OPERATION = ['query']
 
     async def core(self):
-        gdf = gpd.read_file(self.file_path)
+        gdf = self.gdf
         attributes = self.params.get('attributes', [])
         query_target = self.params.get('query_target', 'all')
         target_ids = self.params.get('target_ids', [])
