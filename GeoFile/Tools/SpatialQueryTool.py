@@ -67,13 +67,9 @@ def spatial_query_tool(
     result_geojson_path = ""
 
     if save_shp and not result_gdf.empty:
-        try:
-            # 保存Shapefile（处理字段名截断问题）
-            result_gdf.to_file(shp_path, encoding='utf-8')
-            result_shp_path = shp_path
-            print(f"Saved Shapefile to: {shp_path}")
-        except Exception as e:
-            print(f"Warning: Failed to save Shapefile: {str(e)}")
+        # 保存Shapefile（处理字段名截断问题）
+        result_gdf.to_file(shp_path, encoding='utf-8')
+        result_shp_path = shp_path
 
     if save_geojson and not result_gdf.empty:
         # 保存GeoJSON（保留所有属性）
