@@ -94,9 +94,19 @@ def _load_file(path: str) -> gpd.GeoDataFrame:
     # 根据文件扩展名判断类型
     ext = os.path.splitext(path)[1].lower()
 
-    if ext in [".shp", ".geojson", ".json", ".gpkg", ".kml", ".gml",
-               ".sqlite", ".db", ".tab", ".mif", ".dxf", ".csv", ".vrt"]:
-        gdf = gpd.read_file(path)
+    # 支持的矢量格式
+    vector_formats = [".shp", ".geojson", ".json", ".gpkg", ".kml", ".gml",
+                      ".sqlite", ".db", ".tab", ".mif", ".dxf", ".vrt"]
+
+    if ext in vector_formats:
+        # 尝试不同编码读取矢量文件
+        encodings_to_try = ['utf-8', 'gbk', 'gb18030', 'big5', 'latin1', 'cp1252']
+
+        for encoding in encodings_to_try:
+            try:
+                gdf = gpd.read_file(path, encoding=encoding)
+            except UnicodeDecodeError:
+                continue
     else:
         raise ValueError(f"Unsupported file extension: {ext}. "
                          "Supported: .shp, .geojson, .json")

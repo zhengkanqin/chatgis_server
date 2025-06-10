@@ -2,19 +2,21 @@ import asyncio
 import json
 
 from GeoFile.Service.ToolService import attribute_query, shp_to_type, read_file
-from GeoFile.Tools.GeographicObjectTool import _load_geojson_dict
+from GeoFile.Tools.GeographicObjectTool import _load_geojson_dict, read_geographic_data
 
+
+# GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp
 
 async def main():
+
+
     # 测试阅读操作（convert）
     # convert_result = await read_file.ainvoke({
     #     "file_path": "GeoFile/AAATestFile/Shp/边界.shp"
     # })
     # print(json.dumps(convert_result, indent=2, ensure_ascii=False))
 
-    st = '{"type": "Polygon", "coordinates": [[[111,111], [114, 514], [123,123], [13345,1241]]]}'
-    parsed_source = json.loads(st)
-    result = _load_geojson_dict(parsed_source)
+    result = read_geographic_data("GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp")
     print(result)
     
     # 测试转换操作（convert）
