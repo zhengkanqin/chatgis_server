@@ -72,8 +72,15 @@ class ValueErrorHandler(SpatialBaseErrorHandler):
         reasons = []
         solutions = []
 
-        reasons.append(error_msg)
-        solutions.append("请检查该值是否合规！")
+        if "图层仓库" in error_msg:
+            reasons.append(error_msg)
+            solutions.append("此文件不存在，请重新查阅图层仓库确定Layer名称是否正确！")
+        elif "图层类型" in error_msg:
+            reasons.append(error_msg)
+            solutions.append("此文件不合法，图层类型无法被处理，请尝试使用其他类型的图层！")
+        else:
+            reasons.append(error_msg)
+            solutions.append("请检查该值是否合规！")
 
         self.error_info.update({
             "原因": "文件重要值错误",
@@ -101,6 +108,29 @@ class TypeErrorHandler(SpatialBaseErrorHandler):
         })
 
 
+class KeyErrorHandler(SpatialBaseErrorHandler):
+    """数值或参数异常处理"""
+    ERROR_TYPE = KeyError
+
+    def build_error_info(self):
+        error_msg = str(self.error_obj).lower()
+        reasons = []
+        solutions = []
+
+        if 'coordinates' in error_msg:
+            reasons.append(error_msg)
+            solutions.append("请检查输入的GeoJSON对象是否满足例如'{\"type\": \"Polygon\", \"coordinates\": [...]}'等的可读取标准格式输入！")
+        else:
+            reasons.append(error_msg)
+            solutions.append("请检查输入GeoJSON对象的键值是否合法！")
+
+        self.error_info.update({
+            "原因": "GeoJSON对象键值错误",
+            "技术诊断": reasons,
+            "修复建议": solutions
+        })
+
+
 class SpatialOperationErrorFactory:
     """异常处理工厂"""
     HANDLERS = {
@@ -108,7 +138,8 @@ class SpatialOperationErrorFactory:
         for handler in [
             FileNotFoundHandler,
             ValueErrorHandler,
-            TypeErrorHandler
+            TypeErrorHandler,
+            KeyErrorHandler
         ]
     }
 

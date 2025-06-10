@@ -93,7 +93,7 @@ class ValueErrorHandler(ShpBaseErrorHandler):
             solutions.append("仅支持使用Shp文件格式！")
         elif "属性字段" in error_msg:
             reasons.append(error_msg)
-            solutions.append("请重新阅读文件以确定属性字段名称是否正确！")
+            solutions.append("属性字段不存在，请重新阅读文件以确定属性字段名称是否正确！")
         elif "查询目标类型" in error_msg:
             reasons.append(error_msg)
             solutions.append("请检查对应参数是否是四种查询中的一种！")

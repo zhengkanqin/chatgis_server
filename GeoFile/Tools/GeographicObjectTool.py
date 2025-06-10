@@ -156,7 +156,7 @@ def _load_layer(layer_name: str) -> gpd.GeoDataFrame:
         None
     )
     if not layer_data:
-        raise ValueError(f"Layer not found: {layer_name}")
+        raise ValueError(f"图层仓库中找不到: {layer_name}")
 
     # 根据图层类型处理数据
     layer_type = layer_data['data']['type']
@@ -189,7 +189,7 @@ def _load_layer(layer_name: str) -> gpd.GeoDataFrame:
         gdf = _load_geojson_dict(layer_data['data'])
 
     else:
-        raise ValueError(f"Unsupported layer type: {layer_type}")
+        raise ValueError(f"不支持的图层类型: {layer_type}")
 
     return _ensure_valid_gdf(gdf)
 

@@ -57,10 +57,7 @@ def spatial_query_tool(
     geojson_path = os.path.join(output_dir, f"{base_name}.geojson")
 
     # 执行空间查询
-    try:
-        result_gdf = _perform_spatial_query(origin_gdf, query_gdf, relation)
-    except Exception as e:
-        raise ValueError(f"Spatial query failed: {str(e)}")
+    result_gdf = _perform_spatial_query(origin_gdf, query_gdf, relation)
 
     # 保存结果
     result_shp_path = ""
