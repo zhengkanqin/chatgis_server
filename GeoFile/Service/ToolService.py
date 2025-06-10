@@ -181,24 +181,25 @@ async def buffer_query(file_path: str,
 @tool()
 async def spatial_query(source: Union[str, Dict],
                         query_source: Union[str, Dict],
-                        queried_condition: Optional[Dict[str, Any]] = None,
+                        queried_condition: Optional[Union[str, Dict[str, Any]]] = None,
                         relation: Optional[str] = "intersects"):
     """
     执行空间查询：检查源要素是否与查询空间对象存在空间关系
 
     参数:
     - source: 待查询的数据源，支持以下格式：
-        * 文件路径: SHP/GeoJSON/GPKG等地理文件路径
-        * GeoJSON对象: {'type': 'FeatureCollection', ...}
-        * 图层引用: "[$layer]图层数据[$layer]"
+        * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+        * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
+        * 图层引用(str): "[$layer]图层数据[$layer]"
 
     - query_source: 空间查询对象，支持以下格式：
-        * 文件路径: SHP/GeoJSON/GPKG等地理文件路径
-        * GeoJSON对象: {'type': 'Polygon', 'coordinates': [...]}
-        * 图层引用: "[$layer]图层数据[$layer]"
-        * 缓冲区参数: {'type': 'buffer', 'source': 源要素(GeoJSON对象), 'distance': 距离(米)}
+        * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+        * GeoJSON对象(str或Dict): {'type': 'Polygon', 'coordinates': [...]}
+        * 图层引用(str): "[$layer]图层数据[$layer]"
+        * 缓冲区参数(str或Dict): {'type': 'buffer', 'source': 源要素(GeoJSON对象), 'distance': 距离(米)}
 
     - queried_condition: 源数据属性过滤条件(可选)
+        * 类型: str 或 Dict[str, Any]
         * 格式: {"属性名": 值} 或 {"属性名": 操作函数}
         * 示例:
             {"type": "building"}  # 简单等于条件

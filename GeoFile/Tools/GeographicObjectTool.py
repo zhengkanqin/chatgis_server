@@ -13,7 +13,7 @@ from Agent.Globals import UserLayers
 
 def read_geographic_data(
         source: Union[str, Dict],
-        condition: Optional[Dict[str, Any]] = None
+        condition: Optional[Union[str, Dict[str, Any]]] = None
 ) -> gpd.GeoDataFrame:
     """
     读取地理数据并返回GeoDataFrame，支持多种输入格式和条件过滤
@@ -23,7 +23,8 @@ def read_geographic_data(
             - 文件路径: SHP/GeoJSON等地理文件路径
             - GeoJSON对象: {'type': 'Polygon', 'coordinates': [...]}
             - 图层引用: "[$layer]图层名[$layer]"
-            - 缓冲区参数: {'type': 'buffer', 'source': 源要素, 'distance': 距离(米)}
+            - 缓冲区参数: {'type': 'buffer', 'source': 源要素, 'distance': 距离(米)}\
+            - 其他对象: 尝试转为JSON字典处理
 
         condition: 源数据属性过滤条件(可选)
             - 格式: {"属性名": 值} 或 {"属性名": 操作函数} 或 {"属性名": [值1, 值2]}
@@ -34,10 +35,15 @@ def read_geographic_data(
 
     返回:
         geopandas.GeoDataFrame对象
-
-    异常:
-        当输入类型不支持或无法识别时抛出ValueError
     """
+    # 处理非str/dict类型的输入 (如对象)
+    if not isinstance(source, (str, dict)):
+        try:
+            # 尝试将对象转换为JSON字典
+            source = json.loads(json.dumps(source, default=lambda o: o.__dict__))
+        except Exception as e:
+            raise TypeError(f"无法转换对象为JSON: {type(source)}. 错误: {str(e)}") from e
+
     # 处理图层引用
     if isinstance(source, str) and re.match(r"^\[\$layer].*\[\$layer]$", source):
         layer_name = source[8:-8]  # 移除[$layer]标记
@@ -126,28 +132,28 @@ def _load_layer(layer_name: str) -> gpd.GeoDataFrame:
         raise ValueError(f"Layer not found: {layer_name}")
 
     # 根据图层类型处理数据
-    layer_type = layer_data['type']
+    layer_type = layer_data['data']['type']
 
     if layer_type == 'Marker':
-        point = Point(layer_data['position'])
+        point = Point(layer_data['data']['position'])
         gdf = gpd.GeoDataFrame(geometry=[point], crs="EPSG:4326")
 
     elif layer_type == 'Polyline':
-        line = LineString(layer_data['path'])
+        line = LineString(layer_data['data']['path'])
         gdf = gpd.GeoDataFrame(geometry=[line], crs="EPSG:4326")
 
-    elif layer_type in ['Polygon', 'Boundary']:
-        polygon = Polygon(layer_data['path'])
+    elif layer_type in ['Polygon', 'Boundary', '面', '边界']:
+        polygon = Polygon(layer_data['data']['path'])
         gdf = gpd.GeoDataFrame(geometry=[polygon], crs="EPSG:4326")
 
     elif layer_type == 'Circle':
-        center = Point(layer_data['center'])
-        radius = layer_data['radius']
+        center = Point(layer_data['data']['center'])
+        radius = layer_data['data']['radius']
 
         # 创建缓冲区（圆形）
         buffer_params = {
             'type': 'buffer',
-            'source': {'type': 'Point', 'coordinates': layer_data['center']},
+            'source': {'type': 'Point', 'coordinates': center},
             'distance': radius
         }
         gdf = _create_buffer(buffer_params)
@@ -185,7 +191,7 @@ def _create_buffer(buffer_params: Dict) -> gpd.GeoDataFrame:
     return _ensure_valid_gdf(buffered_gdf)
 
 
-def _apply_condition(gdf: gpd.GeoDataFrame, condition: Dict[str, Any]) -> gpd.GeoDataFrame:
+def _apply_condition(gdf: gpd.GeoDataFrame, condition: Union[str, Dict[str, Any]]) -> gpd.GeoDataFrame:
     """
     应用条件过滤到GeoDataFrame
 
@@ -201,6 +207,9 @@ def _apply_condition(gdf: gpd.GeoDataFrame, condition: Dict[str, Any]) -> gpd.Ge
 
     # 创建初始的True掩码
     mask = pd.Series([True] * len(gdf), index=gdf.index)
+
+    if isinstance(condition, str):
+        condition = json.loads(condition)
 
     # 处理每个条件
     for attr, value in condition.items():

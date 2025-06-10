@@ -82,13 +82,33 @@ class ValueErrorHandler(SpatialBaseErrorHandler):
         })
 
 
+class TypeErrorHandler(SpatialBaseErrorHandler):
+    """数值或参数异常处理"""
+    ERROR_TYPE = TypeError
+
+    def build_error_info(self):
+        error_msg = str(self.error_obj).lower()
+        reasons = []
+        solutions = []
+
+        reasons.append(error_msg)
+        solutions.append("请检查输入对象的类型是否合法！")
+
+        self.error_info.update({
+            "原因": "输入对象类型错误",
+            "技术诊断": reasons,
+            "修复建议": solutions
+        })
+
+
 class SpatialOperationErrorFactory:
     """异常处理工厂"""
     HANDLERS = {
         handler.ERROR_TYPE: handler
         for handler in [
             FileNotFoundHandler,
-            ValueErrorHandler
+            ValueErrorHandler,
+            TypeErrorHandler
         ]
     }
 
