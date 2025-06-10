@@ -6,7 +6,7 @@ from typing import Union, Dict, Any, Optional
 
 import geopandas as gpd
 import pandas as pd
-from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry import Point, LineString, Polygon, shape
 
 from Agent.Globals import UserLayers
 
@@ -105,18 +105,36 @@ def _load_file(path: str) -> gpd.GeoDataFrame:
 
 
 def _load_geojson_dict(geojson_dict: Dict) -> gpd.GeoDataFrame:
-    """处理GeoJSON字典对象"""
+    """处理GeoJSON字典对象并转换为有效的GeoDataFrame"""
     # 处理不同类型的GeoJSON结构
     if geojson_dict.get('type') == 'FeatureCollection':
+        # 直接处理FeatureCollection
         gdf = gpd.GeoDataFrame.from_features(geojson_dict)
+
     elif geojson_dict.get('type') == 'Feature':
-        gdf = gpd.GeoDataFrame.from_features([geojson_dict])
+        # 处理单个Feature
+        geometry = shape(geojson_dict['geometry'])
+        properties = geojson_dict.get('properties', {})
+        gdf = gpd.GeoDataFrame([properties], geometry=[geometry])
+
     elif geojson_dict.get('type') in ['Point', 'LineString', 'Polygon',
                                       'MultiPoint', 'MultiLineString', 'MultiPolygon']:
         # 处理纯几何对象
-        gdf = gpd.GeoDataFrame(geometry=[gpd.GeoSeries(geojson_dict)])
+        geometry = shape(geojson_dict)
+        gdf = gpd.GeoDataFrame(geometry=[geometry])
+
     else:
-        raise ValueError("Unsupported GeoJSON structure")
+        # 尝试处理非标准GeoJSON格式
+        try:
+            # 尝试作为FeatureCollection处理
+            gdf = gpd.GeoDataFrame.from_features(geojson_dict)
+        except Exception:
+            # 尝试作为单个几何对象处理
+            try:
+                geometry = shape(geojson_dict)
+                gdf = gpd.GeoDataFrame(geometry=[geometry])
+            except Exception as e:
+                raise ValueError(f"无法识别的GeoJSON结构: {geojson_dict.get('type')}") from e
 
     return _ensure_valid_gdf(gdf)
 
