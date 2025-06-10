@@ -1,5 +1,6 @@
 import asyncio
 import json
+import geopandas as gpd
 
 from GeoFile.Service.ToolService import attribute_query, shp_to_type, read_file
 from GeoFile.Tools.GeographicObjectTool import _load_geojson_dict, read_geographic_data, safe_json_parse
@@ -12,17 +13,18 @@ async def main():
 
     # 测试阅读操作（convert）
     # convert_result = await read_file.ainvoke({
-    #     "file_path": "GeoFile/AAATestFile/Shp/边界.shp"
+    #     "file_path": "GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp"
     # })
     # print(json.dumps(convert_result, indent=2, ensure_ascii=False))
 
-    st = "{'type': 'Polygon', 'path': [[114.20047091643444, 30.66892046532886], [114.29015773855063, 30.655997733455273], [114.21311905801493, 30.58439409666541], [114.20047091643444, 30.66892046532886]]}"
-    parsed_source = safe_json_parse(st)
-    result = _load_geojson_dict(parsed_source)
-    print(result)
+    # st = "{'type': 'Polygon', 'path': [[114.20047091643444, 30.66892046532886], [114.29015773855063, 30.655997733455273], [114.21311905801493, 30.58439409666541], [114.20047091643444, 30.66892046532886]]}"
+    # parsed_source = safe_json_parse(st)
+    # result = _load_geojson_dict(parsed_source)
+    # print(result)
 
-    result = read_geographic_data("GeoFile/AAATestFile/Shp/购物服务.shp")
-    print(result)
+    gdf = gpd.read_file("GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp", encoding='utf-8', errors='ignore')
+    # result = read_geographic_data("GeoFile/AAATestFile/Shp/购物服务.shp")
+    print(gdf)
 
     # 测试转换操作（convert）
     # convert_result = await shp_to_type.ainvoke({

@@ -6,6 +6,7 @@ from typing import Union, Dict, Any, Optional
 
 import geopandas as gpd
 import pandas as pd
+from chardet import detect
 from shapely.geometry import Point, LineString, Polygon, shape
 
 from Agent.Globals import UserLayers
@@ -98,17 +99,56 @@ def _load_file(path: str) -> gpd.GeoDataFrame:
     vector_formats = [".shp", ".geojson", ".json", ".gpkg", ".kml", ".gml",
                       ".sqlite", ".db", ".tab", ".mif", ".dxf", ".vrt"]
 
-    if ext in vector_formats:
-        # 尝试不同编码读取矢量文件
-        # encodings_to_try = ['utf-8', 'GB18030', 'gbk', 'big5', 'latin1', 'cp1252']
-        # for encoding in encodings_to_try:
+    if ext not in vector_formats:
+        raise ValueError(f"Unsupported file extension: {ext}")
+
+    # 特殊处理：当传入.shp文件时，删除对应的.cpg文件
+    if ext == ".shp":
+        # 查找并删除同名的.cpg文件
+        cpg_path = os.path.splitext(path)[0] + ".cpg"
+        if os.path.exists(cpg_path):
+            os.remove(cpg_path)
+
+    # 智能编码检测与处理
+    try:
+        # 特殊处理：当传入.shp文件时，删除对应的.cpg文件
+        if ext == ".shp":
+            raise UnicodeDecodeError
+        else:
+            # 安全检测文件编码
+            with open(path, 'rb') as f:
+                rawdata = f.read()  # 读取前50KB用于检测编码
+
+        print(rawdata)
+        result = detect(rawdata)
+        print(result)
+
+        # 修复置信度处理：处理None值情况
+        confidence = result.get('confidence', 0) if result else 0
+        detected_encoding = result['encoding'] if confidence > 0.7 else 'utf-8'
+
+        # 首次尝试检测到的编码
+        gdf = gpd.read_file(path, encoding=detected_encoding)
+
+    except (UnicodeDecodeError, LookupError, TypeError):
+        # 备选编码方案
+        encodings = ['utf-8', 'GB18030', 'gbk', 'latin1', 'big5']
+        gdf = None
+
+        for encoding in encodings:
+            print(encoding)
+            try:
+                gdf = gpd.read_file(path, encoding=encoding)
+                break
+            except (UnicodeDecodeError, LookupError):
+                continue
+
+    # 最终尝试忽略错误（保留原始字符）
+    if gdf is None:
         try:
-            gdf = gpd.read_file(path, encoding="utf-8")
-        except UnicodeDecodeError:
-            gdf = gpd.read_file(path, encoding="GB18030")
-    else:
-        raise ValueError(f"Unsupported file extension: {ext}. "
-                         "Supported: .shp, .geojson, .json")
+            gdf = gpd.read_file(path, encoding='utf-8', errors='ignore')
+        except Exception as e:
+            raise RuntimeError(f"Failed to read file after multiple encoding attempts: {path}") from e
 
     return _ensure_valid_gdf(gdf)
 

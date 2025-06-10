@@ -1,5 +1,6 @@
 # GeoFile/Tools/SpatialQueryTool.py
 import os
+import re
 from datetime import datetime
 from typing import Dict, Union
 
@@ -64,8 +65,37 @@ def spatial_query_tool(
     result_geojson_path = ""
 
     if save_shp and not result_gdf.empty:
+        # 检查数据中是否包含中文字符
+        contains_chinese = False
+
+        # 检查字段名（列名）
+        for col_name in result_gdf.columns:
+            # 使用正则表达式检查中文字符
+            if re.search(r'[\u4e00-\u9fff]', str(col_name)):
+                contains_chinese = True
+                break
+
+        # 如果字段名没有中文，检查数据内容
+        if not contains_chinese:
+            # 只检查字符串类型的列
+            str_columns = result_gdf.select_dtypes(include=['object']).columns
+            for col in str_columns:
+                # 检查前10行数据（避免全量检查影响性能）
+                sample_data = result_gdf[col].dropna().head(10)
+                for value in sample_data:
+                    if re.search(r'[\u4e00-\u9fff]', str(value)):
+                        contains_chinese = True
+                        break
+                if contains_chinese:
+                    break
+
+        # 根据检查结果选择编码
+        encoding = 'GB18030' if contains_chinese else 'utf-8'
+
         # 保存Shapefile（处理字段名截断问题）
-        result_gdf.to_file(shp_path, encoding='utf-8')
+        print(f"使用编码保存Shapefile: {encoding}")
+        result_gdf.to_file(shp_path, encoding=encoding)
+
         result_shp_path = shp_path
 
     if save_geojson and not result_gdf.empty:
