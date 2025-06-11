@@ -190,12 +190,12 @@ async def spatial_query(source: Union[str, Dict],
     - source: 待查询的数据源，支持以下格式：
         * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
         * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
-        * 图层引用(str): "[$layer]图层数据[$layer]"
+        * 图层引用(str): "[$layer]精确图层名[$layer]"
 
     - query_source: 空间查询对象，支持以下格式：
         * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
         * GeoJSON对象(str或Dict): {"type": "Polygon", "coordinates": [...]}
-        * 图层引用(str): "[$layer]图层数据[$layer]"
+        * 图层引用(str): "[$layer]精确图层名[$layer]"
         * 缓冲区参数(str或Dict): {'type': 'buffer', 'source': 源要素(文件路径或GeoJSON对象), 'distance': 距离(米)}
 
     - queried_condition: 源数据属性过滤条件(可选)
