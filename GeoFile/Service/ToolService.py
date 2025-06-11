@@ -11,7 +11,7 @@ from GeoFile.Processors.SpatialOperationProcessor import SpatialProcessorFactory
 @tool()
 async def read_file(file_path: str):
     """
-    读取并解析地理数据文件，提取关键特征信息，支持Shp/Excel/Csv/Txt等多种形式
+    读取并解析地理数据文件，提取关键特征信息，支持Shp/GeoJSON/Excel/Csv/Txt等多种矢量形式
 
     参数:
     - file_path: 需要读取的文件路径

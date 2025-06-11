@@ -102,30 +102,28 @@ def _load_file(path: str) -> gpd.GeoDataFrame:
     if ext not in vector_formats:
         raise ValueError(f"Unsupported file extension: {ext}")
 
-    # 特殊处理：当传入.shp文件时，删除对应的.cpg文件
-    if ext == ".shp":
-        # 查找并删除同名的.cpg文件
-        cpg_path = os.path.splitext(path)[0] + ".cpg"
-        if os.path.exists(cpg_path):
-            os.remove(cpg_path)
-
     # 智能编码检测与处理
     try:
-        # 特殊处理：当传入.shp文件时，删除对应的.cpg文件
+        # 特殊处理：当传入.shp文件时，查找对应的.cpg文件
         if ext == ".shp":
-            raise UnicodeDecodeError
+            cpg_path = os.path.splitext(path)[0] + ".cpg"
+
+            try:
+                with open(cpg_path, 'r', encoding='utf-8') as cpg_file:
+                    cpg_encoding = cpg_file.read().strip()
+                    detected_encoding = cpg_encoding
+            except Exception:
+                raise UnicodeDecodeError
         else:
             # 安全检测文件编码
             with open(path, 'rb') as f:
                 rawdata = f.read()  # 读取前50KB用于检测编码
 
-        print(rawdata)
-        result = detect(rawdata)
-        print(result)
+            result = detect(rawdata)
 
-        # 修复置信度处理：处理None值情况
-        confidence = result.get('confidence', 0) if result else 0
-        detected_encoding = result['encoding'] if confidence > 0.7 else 'utf-8'
+            # 修复置信度处理：处理None值情况
+            confidence = result.get('confidence', 0) if result else 0
+            detected_encoding = result['encoding'] if confidence > 0.7 else 'utf-8'
 
         # 首次尝试检测到的编码
         gdf = gpd.read_file(path, encoding=detected_encoding)
