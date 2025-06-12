@@ -4,17 +4,8 @@
 
 为每一类地理文件输入中出现的异常提供合适的处理
 """
-import logging
-import os
-import shutil
-import tempfile
-import geopandas as gpd
 
-from pyproj.exceptions import CRSError
-from pyogrio.errors import DataSourceError
 from pandas.errors import EmptyDataError, ParserError
-
-from connection_manager import manager
 
 
 class DataInputBaseErrorHandler:
@@ -105,117 +96,6 @@ class ValueErrorHandler(DataInputBaseErrorHandler):
         })
 
 
-class CRSErrorHandler(DataInputBaseErrorHandler):
-    """坐标系异常处理"""
-    ERROR_TYPE = CRSError
-
-    def build_error_info(self):
-        self.error_info.update({
-            "原因": "坐标系定义异常",
-            "技术诊断": [
-                f"原始错误: {str(self.error_obj)}",
-                "可能原因:",
-                "1. PRJ文件缺失或损坏",
-                "2. 使用了非标准EPSG代码",
-                "3. 数据导出时未正确设置投影"
-            ],
-            "修复建议": [
-                "正在尝试进行自动修复……"
-            ]
-        })
-
-    async def format_response(self):
-        self.build_error_info()
-        sections = [
-            f"■ 错误原因\n{self.error_info['原因']}",
-            "▼ 技术诊断\n" + "\n".join(self.error_info["技术诊断"]),
-            "⚙ 修复建议\n" + "\n".join(self.error_info["修复建议"])
-        ]
-        await manager.send_message("\n".join(sections))
-        logging.info("\n".join(sections))
-
-        """处理坐标系错误并尝试自动修复.prj文件问题"""
-        prj_path = os.path.splitext(self.file_path)[0] + ".prj"
-        temp_prj = None
-        prj_removed = False
-
-        # 尝试备份并移除.prj文件
-        if os.path.exists(prj_path):
-            temp_prj = tempfile.NamedTemporaryFile(delete=False, suffix=".prj")
-            shutil.move(prj_path, temp_prj.name)
-            prj_removed = True
-            logging.info(f"已临时移除PRJ文件: {prj_path} → {temp_prj.name}")
-
-        # 尝试重新读取数据（无.prj文件状态）
-        try:
-            gdf = gpd.read_file(self.file_path)
-        except Exception as read_error:
-            # 生成详细错误报告
-            error_info = {
-                "原因": "坐标系修复失败",
-                "技术诊断": [
-                    f"初次错误: {str(self.error_obj)}",
-                    f"移除PRJ后错误: {str(read_error)}",
-                    "可能原因:",
-                    "1. 数据本身坐标值异常",
-                    "2. 几何数据损坏",
-                    "3. 需要手动指定坐标系"
-                ],
-                "修复建议": [
-                    "终极方案：强制指定坐标系参数",
-                    "操作步骤：",
-                    "1. 用文本编辑器查看坐标值范围",
-                    "2. 根据数据来源推测正确坐标系",
-                    "3. 使用QGIS重新定义投影"
-                ]
-            }
-
-            sections = [
-                f"■ 错误原因\n{error_info['原因']}",
-                "▼ 技术诊断\n" + "\n".join(error_info["技术诊断"]),
-                "⚙ 修复建议\n" + "\n".join(error_info["修复建议"])
-            ]
-            return "\n".join(sections)
-
-        await manager.send_message(
-            f"成功读取文件 {os.path.basename(self.file_path)}\n"
-            f"- 移除无效PRJ文件后坐标系: {gdf.crs}"
-        )
-
-        return gdf
-
-
-class DataSourceErrorHandler(DataInputBaseErrorHandler):
-    """数据源异常处理"""
-    ERROR_TYPE = DataSourceError
-
-    def build_error_info(self):
-        error_msg = str(self.error_obj).lower()
-        reasons = [error_msg]
-
-        if "no such file" in error_msg:
-            reasons.append("文件路径错误或包含特殊字符")
-        elif "unrecognized data source" in error_msg:
-            reasons.append("文件扩展名与实际格式不匹配")
-        elif "failed to open" in error_msg:
-            reasons.extend(["文件正在被其他程序占用", "文件权限不足"])
-        elif ".shx" in error_msg:
-            reasons.append("Shapefile组件不完整（缺少.shx文件）")
-        else:
-            reasons.append("未知数据源错误，需要进一步诊断")
-
-        self.error_info.update({
-            "原因": "数据源读取失败",
-            "技术诊断": reasons,
-            "修复建议": [
-                "1. 检查文件完整性（必须包含.shp/.shx等）",
-                "2. 验证文件编码：使用文本编辑器查看是否有乱码",
-                "3. 尝试指定驱动参数：gpd.read_file(file_path, driver='ESRI Shapefile')",
-                "4. 使用QGIS打开文件验证数据有效性"
-            ]
-        })
-
-
 class CSVReadErrorHandler(DataInputBaseErrorHandler):
     """CSV读取异常处理"""
     ERROR_TYPE = (ParserError, EmptyDataError)
@@ -260,8 +140,6 @@ class GeoFileErrorFactory:
         handler.ERROR_TYPE: handler
         for handler in [
             FileNotFoundHandler,
-            CRSErrorHandler,
-            DataSourceErrorHandler,
             CSVReadErrorHandler,
             ExcelReadErrorHandler,
             ValueErrorHandler

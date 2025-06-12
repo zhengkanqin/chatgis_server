@@ -2,11 +2,15 @@
 import json
 import os
 import re
+import shutil
+import tempfile
 from typing import Union, Dict, Any, Optional
 
 import geopandas as gpd
 import pandas as pd
 from chardet import detect
+from pyproj.exceptions import CRSError
+from pyogrio.errors import DataSourceError
 from shapely.geometry import Point, LineString, Polygon, shape
 
 from Agent.Globals import UserLayers
@@ -63,7 +67,10 @@ def read_geographic_data(
                     gdf = _load_geojson_dict(parsed_source)
             else:
                 # 不是字典则当作文件路径处理
-                gdf = _load_file(source)
+                try:
+                    gdf = _load_file(source)
+                except Exception as e:
+                    gdf = _load_file_exception(e, source)
         except json.JSONDecodeError:
             # JSON解析失败，当作普通文件路径
             gdf = _load_file(source)
@@ -327,3 +334,36 @@ def safe_json_parse(json_str):
     json_str = json_str.replace("'", '"')
 
     return json.loads(json_str)
+
+
+def _load_file_exception(e, file_path):
+    error_msg = str(e).lower()
+    if isinstance(e, DataSourceError):
+        if "no such file" in error_msg:
+            raise FileNotFoundError("文件路径错误或包含特殊字符")
+        elif "unrecognized data source" in error_msg:
+            raise FileNotFoundError("文件扩展名与实际格式不匹配")
+        elif "failed to open" in error_msg:
+            raise FileNotFoundError(["文件正在被其他程序占用", "文件权限不足"])
+        elif ".shx" in error_msg:
+            raise FileNotFoundError("Shapefile组件不完整（缺少.shx文件）")
+        else:
+            raise FileNotFoundError("未知数据源错误，需要进一步诊断")
+    elif isinstance(e, CRSError):
+        """处理坐标系错误并尝试自动修复.prj文件问题"""
+        prj_path = os.path.splitext(file_path)[0] + ".prj"
+        temp_prj = None
+        prj_removed = False
+
+        # 尝试备份并移除.prj文件
+        if os.path.exists(prj_path):
+            temp_prj = tempfile.NamedTemporaryFile(delete=False, suffix=".prj")
+            shutil.move(prj_path, temp_prj.name)
+            prj_removed = True
+
+        # 尝试重新读取数据（无.prj文件状态）
+        try:
+            gdf = gpd.read_file(file_path)
+            return gdf
+        except Exception as read_error:
+            raise ValueError(f"该.shp文件的.prj坐标系文件损坏且无法自动修复，错误信息: {read_error}")
