@@ -177,26 +177,39 @@ async def draw_image(url: str, bounds: str, name: str, options: str):
 
 # 绘制geojson
 @tool()
-async def draw_geojson(geojson: str, name: str, style: str, properties:str):
+async def draw_geojson(geojson: str | list[str], name: str | list[str], style: str | list[str] = "", properties: str | list[str] = ""):
     """
-    在用户可见的地图上绘制一个GeoJSON图层
+    在用户可见的地图上绘制或批量绘制若干GeoJSON格式文件的图层，多个GeoJSON时尽量批量绘制。
 
     参数:
-    - geojson: str GeoJSON格式数据、GeoJSON链接、GeoJSON路径均可，不允许直接输入shp，需要进行转换。
-    - name: str GeoJSON图层的名字
-    - style: str 默认不写，
-    - properties: str 可以指定用于数值排序的属性，根据需要选择是否填写
+    - geojson: str | list[str] GeoJSON格式数据、GeoJSON链接、GeoJSON路径均可,需要进行转换。
+               可以是单个字符串或字符串数组，当传入数组时可以进行批量绘制,需要与name、style、properties数组长度一致。
+    - name: str | list[str] GeoJSON图层的名字,可以是单个字符串或字符串数组
+    - properties: str | list[str] 可以指定用于数值排序的属性，根据需要选择是否填写，可以是单个字符串或字符串数组
     """
+
+    # 确保所有参数都是列表形式
+    geojson_list = [geojson] if isinstance(geojson, str) else geojson
+    name_list = [name] if isinstance(name, str) else name
+    style_list = [style] if isinstance(style, str) else style
+    properties_list = [properties] if isinstance(properties, str) else properties
+
+    # 验证数组长度一致性
+    if not (len(geojson_list) == len(name_list) == len(style_list) == len(properties_list)):
+        raise ValueError("当使用数组形式时，所有参数数组长度必须一致")
 
     CommandEvent = {
         "type": "map",
         "operation": "draw-geojson",
-        "data": {
-            "geojson": geojson,
-            "name": name,
-            "style": style,
-            "properties": properties
-        }
+        "data": [
+            {
+                "geojson": g,
+                "name": n,
+                "style": "",  # 始终使用空字符串
+                "properties": p
+            }
+            for g, n, s, p in zip(geojson_list, name_list, style_list, properties_list)
+        ]
     }
     print(CommandEvent)
     json_str = json.dumps(CommandEvent)  # 转成 JSON 字符串

@@ -6,6 +6,7 @@ import re
 
 from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches,prompt_summary, prompt_reflection
 from Agent.MultiAgent_func import sender_info
+from AgentTools.baidumaptools import map_directions, map_reverse_geocode
 from GeoFile.Service.ToolService import read_file, shp_to_type, attribute_query, buffer_query, buffer_create,spatial_query
 from AgentTools.RAG import Query_GeoFile, Query_Knowledge
 from connection_manager import manager
@@ -40,8 +41,10 @@ map_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=syste
 analysis_tools = [
     read_file,
     shp_to_type,
-    attribute_query,
-    spatial_query
+    # attribute_query,
+    spatial_query,
+    map_directions,
+    map_reverse_geocode
 ]
 analysis_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(analysis_tools)
 #------------------------------------------------------------
@@ -82,6 +85,8 @@ def map_operation(state:GIS_State):
     messages = state["act_messages"] + messages
     messages.insert(0, SystemMessage(content=prompt_maps))
     response = map_llm.invoke(messages)
+    if response.content == messages[-1].content and "[$fail]" not in messages[-1].content and "[$end]" not in messages[-1].content:
+        return {"messages":[HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")],"temp_messages": [HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")]} #防止陷入死循环
     if "[$end][$end]" in response.content or "[$fail]" in response.content:
         return {"messages":[response],"temp_messages": [response],"act_messages": [response]}
     return {"temp_messages": [response]}
@@ -92,6 +97,8 @@ def analysis_operation(state:GIS_State):
     messages = state["act_messages"] + messages
     messages.insert(0, SystemMessage(content=prompt_analysis))
     response = analysis_llm.invoke(messages)
+    if response.content == messages[-1].content and "[$fail]" not in messages[-1].content and "[$end]" not in messages[-1].content:
+        return {"messages":[HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")],"temp_messages": [HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")]} #防止陷入死循环
     if "[$end][$end]" in response.content or "[$fail]" in response.content:
         return {"messages":[response],"temp_messages": [response],"act_messages": [response]}
     return {"temp_messages": [response]}
@@ -102,6 +109,8 @@ def search_operation(state:GIS_State):
     messages = state["act_messages"] + messages
     messages.insert(0, SystemMessage(content=prompt_searches))
     response = search_llm.invoke(messages)
+    if response.content == messages[-1].content and "[$fail]" not in messages[-1].content and "[$end]" not in messages[-1].content:
+        return {"messages":[HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")],"temp_messages": [HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")]} #防止陷入死循环
     if "[$end][$end]" in response.content or "[$fail]" in response.content:
         print("准备提交")
         return {"messages":[response],"temp_messages": [response],"act_messages": [response]}
@@ -117,7 +126,7 @@ def summary_operation(state:GIS_State):
 def reflection_operation(state:GIS_State):
     messages = state["messages"]
     messages = [m for m in state["messages"] if not isinstance(m, SystemMessage)]
-    messages.insert(0, SystemMessage(content=prompt_reflection))
+    messages.append(SystemMessage(content=prompt_reflection))
     response = no_tool_llm.invoke(messages)
     return {"messages": [response]}
 
