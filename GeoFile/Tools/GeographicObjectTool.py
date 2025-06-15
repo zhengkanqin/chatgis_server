@@ -352,14 +352,11 @@ def _load_file_exception(e, file_path):
     elif isinstance(e, CRSError):
         """处理坐标系错误并尝试自动修复.prj文件问题"""
         prj_path = os.path.splitext(file_path)[0] + ".prj"
-        temp_prj = None
-        prj_removed = False
 
         # 尝试备份并移除.prj文件
         if os.path.exists(prj_path):
             temp_prj = tempfile.NamedTemporaryFile(delete=False, suffix=".prj")
             shutil.move(prj_path, temp_prj.name)
-            prj_removed = True
 
         # 尝试重新读取数据（无.prj文件状态）
         try:

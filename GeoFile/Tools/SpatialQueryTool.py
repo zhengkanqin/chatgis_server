@@ -125,7 +125,7 @@ def _perform_spatial_query(
     """
     # 创建查询几何（合并所有查询几何）
     if len(query_gdf) > 1:
-        query_geom = query_gdf.unary_union
+        query_geom = query_gdf.geometry.union_all()
     else:
         query_geom = query_gdf.geometry.iloc[0]
 

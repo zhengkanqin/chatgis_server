@@ -64,8 +64,8 @@ def buffer_query_tool(file_path: str,
         raise ValueError("缓冲区距离必须大于0")
 
     # 检查ID范围
-    buffer_invalid_ids = [id for id in buffer_create_ids if id < 0 or id >= len(gdf_buffer)]
-    target_invalid_ids = [id for id in target_ids if id < 0 or id >= len(gdf_target)]
+    buffer_invalid_ids = [ids for ids in buffer_create_ids if ids < 0 or ids >= len(gdf_buffer)]
+    target_invalid_ids = [ids for ids in target_ids if ids < 0 or ids >= len(gdf_target)]
 
     if buffer_invalid_ids:
         raise ValueError(f"缓冲区创建要素中存在无效ID: {buffer_invalid_ids}")

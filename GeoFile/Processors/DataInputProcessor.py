@@ -4,17 +4,16 @@
 
 支持多种格式的文件自动读取
 """
-import os
-import json
 import logging
-import pandas as pd
-import geopandas as gpd
-from itertools import combinations
+import os
 from abc import ABC, abstractmethod
+from itertools import combinations
+
+import pandas as pd
 
 from GeoFile.Common.ErrorsHandler.DataInputErrors import GeoFileErrorFactory
-from GeoFile.Common.Message import success
 from GeoFile.Common.Message import error
+from GeoFile.Common.Message import success
 from GeoFile.Tools.DataInputTools import classify_field_type
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from connection_manager import manager
@@ -239,7 +238,7 @@ class TabularProcessor(BaseFileProcessor):
         if self.lon_col is None or self.lat_col is None:
             try:
                 self.header_mode = not self.df.columns.str.contains('^Unnamed').all()
-            except AttributeError as e:
+            except AttributeError:
                 self.header_mode = True
 
             self.lon_col = self.detect_col('lon') or (0 if not self.header_mode else None)
@@ -260,8 +259,8 @@ class TabularProcessor(BaseFileProcessor):
             sample_size = len(self.df)
             confidence = 0.8 if sample_size < 1000 else 0.95
 
-            def is_valid_range(col, target_range):
-                data = self.df[col].dropna()
+            def is_valid_range(df_col, target_range):
+                data = self.df[df_col].dropna()
                 return (
                         (data.between(*target_range).mean() > confidence) and
                         (abs(data.median() - (target_range[0] + target_range[1]) / 2) < 5
@@ -274,7 +273,7 @@ class TabularProcessor(BaseFileProcessor):
                         candidate_pairs.append((col1, col2))
                     elif is_valid_range(col2, CHINA_LON_RANGE) and is_valid_range(col1, CHINA_LAT_RANGE):
                         candidate_pairs.append((col2, col1))
-                except TypeError as e:
+                except TypeError:
                     pass
 
             # 选择最佳候选对
@@ -293,7 +292,7 @@ class TabularProcessor(BaseFileProcessor):
         for col, col_type in [(self.lon_col, "经度"), (self.lat_col, "纬度")]:
             try:
                 self.df[col] = pd.to_numeric(self.df[col])
-            except:
+            except Exception:
                 err_msg = f"{col_type}字段 {col} 包含非数值数据"
                 raise ValueError(err_msg)
 
@@ -420,10 +419,7 @@ class FileProcessorFactory:
 
         if ext not in cls.PROCESSORS:
             raise ValueError("2")
-        processor_class = cls.PROCESSORS[ext]
-        processor = processor_class(file_path)
 
-        process_result = await processor.core()
         try:
             ext = os.path.splitext(file_path)[1].lower()
 

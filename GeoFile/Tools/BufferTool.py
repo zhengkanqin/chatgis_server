@@ -7,8 +7,10 @@ import geopandas as gpd
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.patches as patches
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon as MplPolygon
+from matplotlib.path import Path
 from pyproj import CRS
 
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
@@ -47,7 +49,7 @@ def buffer_tool(
         raise ValueError("颜色格式应为十六进制，如 #RRGGBB 或 #RRGGBBAA")
 
     # 检查ID范围
-    invalid_ids = [id for id in buffer_create_ids if id < 0 or id >= len(gdf)]
+    invalid_ids = [ids for ids in buffer_create_ids if ids < 0 or ids >= len(gdf)]
     if invalid_ids:
         raise ValueError(f"无效的要素ID: {invalid_ids}")
 
@@ -180,7 +182,7 @@ def create_buffer_png(buffer_geom, buffer_color: str, output_path: str) -> None:
 
 def create_polygon_patch(polygon, color: str) -> MplPolygon:
     """
-    为单个多边形创建matplotlib补丁
+    为单个多边形创建matplotlib补丁，支持带孔洞的多边形
 
     参数:
     - polygon: Shapely多边形对象
@@ -192,23 +194,19 @@ def create_polygon_patch(polygon, color: str) -> MplPolygon:
     # 获取外部环坐标
     exterior = np.array(polygon.exterior.coords)
 
-    # 创建多边形补丁
+    # 获取所有孔洞坐标
+    interiors = [np.array(interior.coords) for interior in polygon.interiors]
+
+    # 创建多边形补丁 - 统一处理带孔洞和不带孔洞的情况
     patch = MplPolygon(
         exterior,
+        holes=interiors if interiors else None,
         closed=True,
         fill=True,
         edgecolor='none',  # 无边框
         facecolor=color,
         alpha=1.0
     )
-
-    # 添加孔洞（如果有）
-    interiors = []
-    for interior in polygon.interiors:
-        interiors.append(np.array(interior.coords))
-
-    if interiors:
-        patch.set_holes(interiors)
 
     return patch
 

@@ -61,7 +61,7 @@ class QueryProcessor:
             raise ValueError("独立查询需要提供attributes列表")
 
         # 检查索引范围
-        invalid_ids = [id for id in target_ids if id < 0 or id >= len(gdf)]
+        invalid_ids = [ids for ids in target_ids if ids < 0 or ids >= len(gdf)]
         if invalid_ids:
             raise ValueError(f"无效的要素ID: {invalid_ids}")
 
@@ -93,7 +93,7 @@ class QueryProcessor:
             raise ValueError("横向查询需要提供target_id列表")
 
         # 检查索引范围
-        invalid_ids = [id for id in target_ids if id < 0 or id >= len(gdf)]
+        invalid_ids = [ids for ids in target_ids if ids < 0 or ids >= len(gdf)]
         if invalid_ids:
             raise ValueError(f"无效的要素ID: {invalid_ids}")
 

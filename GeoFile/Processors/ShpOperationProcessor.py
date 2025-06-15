@@ -8,8 +8,6 @@ import os
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 
-import geopandas as gpd
-
 from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFactory
 from GeoFile.Common.Message import success, error
 from GeoFile.Tools.BufferQueryTool import buffer_query_tool

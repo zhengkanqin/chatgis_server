@@ -4,17 +4,6 @@ Shp文件操作异常处理模块
 
 为Shp文件操作中出现的异常提供合适的处理
 """
-import logging
-import os
-import shutil
-import tempfile
-import geopandas as gpd
-
-from pyproj.exceptions import CRSError
-from pyogrio.errors import DataSourceError
-from pandas.errors import EmptyDataError, ParserError
-
-from connection_manager import manager
 
 
 class ShpBaseErrorHandler:
