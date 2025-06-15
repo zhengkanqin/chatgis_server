@@ -68,7 +68,7 @@ def shp2png(file_path: str,
     try:
         # 获取地理范围
         minx, miny, maxx, maxy = gdf.total_bounds
-        bbox = (minx-0.01, miny-0.01, maxx+0.01, maxy+0.01)
+        bbox = (minx - 0.01, miny - 0.01, maxx + 0.01, maxy + 0.01)
 
         # 创建绘图 - 设置透明背景
         fig, ax = plt.subplots(figsize=(10, 10), facecolor='none')  # 透明背景
@@ -91,17 +91,37 @@ def shp2png(file_path: str,
             # 分类属性使用离散着色
             else:
                 unique_values = gdf[color_by].unique()
-                colors = plt.cm.tab10(np.linspace(0, 1, len(unique_values)))
+                num_colors = len(unique_values)
+
+                # 获取合适的颜色映射
+                if num_colors <= 10:
+                    cmap = plt.get_cmap('tab10')
+                elif num_colors <= 20:
+                    cmap = plt.get_cmap('tab20')
+                else:
+                    # 对于超过20种类别，使用连续颜色映射
+                    cmap = plt.get_cmap('viridis')
+
+                # 生成颜色
+                colors = cmap(np.linspace(0, 1, num_colors))
+
+                # 绘制每个类别
                 for value, color in zip(unique_values, colors):
-                    gdf[gdf[color_by] == value].plot(ax=ax, color=color, label=value)
-                ax.legend(title=color_by)
+                    subset = gdf[gdf[color_by] == value]
+                    if not subset.empty:
+                        subset.plot(
+                            ax=ax,
+                            color=color,
+                            label=str(value),  # 确保值为字符串
+                            edgecolor='none'  # 可选：移除边界线
+                        )
         else:
             # 无属性时使用统一颜色
             gdf.plot(ax=ax, color='blue', edgecolor='black')
 
         # 设置坐标范围
-        ax.set_xlim(minx-0.01, maxx+0.01)
-        ax.set_ylim(miny-0.01, maxy+0.01)
+        ax.set_xlim(minx - 0.01, maxx + 0.01)
+        ax.set_ylim(miny - 0.01, maxy + 0.01)
 
         # 处理输出路径
         if custom_output_path:

@@ -7,10 +7,8 @@ import geopandas as gpd
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.patches as patches
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon as MplPolygon
-from matplotlib.path import Path
 from pyproj import CRS
 
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data

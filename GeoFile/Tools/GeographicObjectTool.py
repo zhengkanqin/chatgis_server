@@ -182,13 +182,34 @@ def _load_geojson_dict(geojson_dict: Dict) -> gpd.GeoDataFrame:
         try:
             # 尝试作为FeatureCollection处理
             gdf = gpd.GeoDataFrame.from_features(geojson_dict)
-        except Exception:
-            # 尝试作为单个几何对象处理
+        except (TypeError, ValueError) as feature_error:
+            # 捕获特定异常：类型错误或值错误
             try:
+                # 尝试作为单个几何对象处理
                 geometry = shape(geojson_dict)
                 gdf = gpd.GeoDataFrame(geometry=[geometry])
-            except Exception as e:
-                raise ValueError(f"无法识别的GeoJSON结构: {geojson_dict.get('type')}") from e
+            except (ValueError, AttributeError, KeyError) as geom_error:
+                # 捕获几何转换的特定错误
+                geojson_type = geojson_dict.get('type', '未知类型')
+                coordinates = geojson_dict.get('coordinates', '无坐标信息')
+                properties = geojson_dict.get('properties', '无属性信息')
+                error_details = (
+                    f"无法识别的GeoJSON结构\n"
+                    f"类型: {geojson_type}\n"
+                    f"坐标结构: {type(coordinates)}\n"
+                    f"属性结构: {type(properties)}\n"
+                    f"原始数据: {str(geojson_dict)[:200]}"
+                )
+
+                # 组合所有错误信息
+                full_error = (
+                    f"GeoJSON解析失败:\n"
+                    f"特征集合错误: {str(feature_error)}\n"
+                    f"几何对象错误: {str(geom_error)}\n"
+                    f"{error_details}"
+                )
+
+                raise ValueError(full_error) from geom_error
 
     return _ensure_valid_gdf(gdf)
 
