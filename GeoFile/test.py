@@ -1,16 +1,12 @@
 import asyncio
 import json
+
 import geopandas as gpd
-
-from GeoFile.Service.ToolService import attribute_query, shp_to_type, read_file
-from GeoFile.Tools.GeographicObjectTool import _load_geojson_dict, read_geographic_data, safe_json_parse
-
+import GeoFile.Service.ToolService as ToolService
 
 # GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp
 
 async def main():
-
-
     # 测试阅读操作（convert）
     # convert_result = await read_file.ainvoke({
     #     "file_path": "GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp"
@@ -22,17 +18,17 @@ async def main():
     # result = _load_geojson_dict(parsed_source)
     # print(result)
 
-    gdf = gpd.read_file("GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp", encoding='utf-8', errors='ignore')
+    # gdf = gpd.read_file("GeoFile/AAATestFile/Shp/spatial_query_20250610_191452.shp", encoding='utf-8', errors='ignore')
     # result = read_geographic_data("GeoFile/AAATestFile/Shp/购物服务.shp")
-    print(gdf)
+    # print(gdf)
 
     # 测试转换操作（convert）
-    # convert_result = await shp_to_type.ainvoke({
-    #     "file_path": "GeoFile/AAATestFile/Shp/防火站.shp",
-    #     "type_name": "png",
-    #     "attributes": []
-    # })
-    # print(json.dumps(convert_result, indent=2, ensure_ascii=False))
+    convert_result = await ToolService.shp_to_type.ainvoke({
+        "file_path": "GeoFile/AAATestFile/Shp/购物服务.shp",
+        "type_name": "png",
+        "attributes": []
+    })
+    print(json.dumps(convert_result, indent=2, ensure_ascii=False))
 
     # 测试属性查询操作（query）
     # query_result = await attribute_query.ainvoke({

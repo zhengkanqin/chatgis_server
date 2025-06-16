@@ -67,20 +67,31 @@ async def read_file(file_path: str):
 
 
 @tool()
-async def shp_to_type(file_path: str,
-                      type_name: str,
-                      attributes: Optional[List[str]] = None,
-                      output_path: Optional[str] = None
-                      ):
+async def geo_data_convert(source: Union[str, Dict],
+                           type_name: str,
+                           attributes: Optional[List[str]] = None,
+                           output_path: Optional[str] = None
+                           ):
     """
-    将SHP转换为其他格式，支持GeoJSON/PNG等格式，可选择保留指定属性字段
+    将各种矢量地理数据转换为其他格式，支持GeoJSON/PNG等格式，可选择保留指定属性字段
 
     参数:
-    - file_path: SHP文件路径
-    - type_name: 转换的目标格式: 'geojson'=GeoJSON格式, 'png'=PNG格式
+    - query_source: 数据格式转换对象，支持以下格式：
+        * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+        * GeoJSON对象(str或Dict): {"type": "Polygon", "coordinates": [...]}
+        * 图层引用(str): "[$layer]精确图层名[$layer]"
+        * 缓冲区参数(str或Dict): {'type': 'buffer', 'source': 源要素(文件路径或GeoJSON对象), 'distance': 距离(米)}
+    - type_name: 转换的目标格式(str):
+        'geojson': GeoJSON格式
+        'png': PNG格式
+        'shp': Shapefile文件集
+        'gpkg': GeoPackage格式
+        'kml': KML格式
+        'geotiff': GeoTIFF文件
     - attributes: 需要处理的属性字段列表(空列表表示全部属性):
-        type_name = "geojson": attributes表示转换时需要保留的属性字段
-        type_name = "png": attributes表示转换时用以着色的数值或分类字段
+        type_name = 'geojson', 'shp', 'gpkg', 'kml': attributes表示转换时需要保留的属性字段
+        type_name = "png": attributes表示转换时用以着色的数值或分类字段(空列表表示使用同一颜色)
+        type_name = "geotiff": attributes表示用于栅格化的属性(空列表表示二值化)
     """
     params = {'type_name': type_name}
     if attributes:
@@ -88,7 +99,7 @@ async def shp_to_type(file_path: str,
     if output_path:
         params.update({"output_path": output_path})
 
-    return await ShpProcessorFactory.create_processor(file_path, "convert", params)
+    return await ShpProcessorFactory.create_processor(source, "convert", params)
 
 
 @tool()
@@ -217,4 +228,4 @@ async def spatial_query(source: Union[str, Dict],
     return await SpatialProcessorFactory.create_processor("spatial_query", source, params)
 
 
-AnalysisTools = [read_file, shp_to_type, attribute_query, buffer_query, spatial_query]
+AnalysisTools = [read_file, geo_data_convert, attribute_query, buffer_query, spatial_query]

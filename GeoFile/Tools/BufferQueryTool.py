@@ -36,9 +36,9 @@ def _get_utm_crs(lon: float, lat: float) -> CRS:
     })
 
 
-def buffer_query_tool(file_path: str,
+def buffer_query_tool(gdf_buffer: gpd.GeoDataFrame,
                       buffer_create_ids: List[int],
-                      query_file_path: str,
+                      gdf_target: gpd.GeoDataFrame,
                       target_ids: List[int],
                       buffer_distance: float):
     """
@@ -51,10 +51,6 @@ def buffer_query_tool(file_path: str,
     - target_ids: 需要检查的目标要素ID列表
     - buffer_distance: 缓冲区距离(米)
     """
-    # 读取两个SHP文件
-    gdf_buffer = gpd.read_file(file_path)
-    gdf_target = gpd.read_file(query_file_path)
-
     # 验证输入
     if not buffer_create_ids:
         raise ValueError("必须提供至少一个缓冲区创建要素ID")

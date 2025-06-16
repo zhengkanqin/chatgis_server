@@ -6,14 +6,14 @@ SHP文件操作处理模块
 """
 import os
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 
 from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFactory
 from GeoFile.Common.Message import success, error
 from GeoFile.Tools.BufferQueryTool import buffer_query_tool
 from GeoFile.Tools.BufferTool import buffer_tool
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
-from GeoFile.Tools.Shp2TypeTool import shp2geojson, shp2png
+from GeoFile.Tools.Gdf2TypeTool import ConverterFactory
 from GeoFile.Tools.ShpQueryTools import query_tool
 
 
@@ -22,34 +22,22 @@ class BaseOperationProcessor(ABC):
 
     SUPPORTED_OPERATION = []
 
-    def __init__(self, file_path: str, operation: str, params: Optional[Dict[str, Any]] = None):
+    def __init__(self, source: Union[str, Dict], operation: str, params: Optional[Dict[str, Any]] = None):
         """
-        :param file_path: 文件路径（支持绝对/相对路径）
+        :param source: 文件源
         :param operation: 操作类型
         :param params: 操作参数
         """
-        self.file_path = os.path.abspath(file_path)
-        self.gdf = read_geographic_data(file_path)
+        self.source = source
+        self.gdf = read_geographic_data(source)
         self.operation = operation
         self.params = params or {}
         self._validate()
 
     def _validate(self):
         """基础验证"""
-        if not self._check_extension():
-            raise ValueError(f"不支持的文件类型: {self.extension}")
         if self.operation not in self.SUPPORTED_OPERATION:
             raise ValueError(f"操作类型'{self.operation}'不被支持")
-
-    @property
-    def extension(self) -> str:
-        """获取文件扩展名"""
-        return os.path.splitext(self.file_path)[1].lower()
-
-    def _check_extension(self) -> bool:
-        """检查扩展名是否支持"""
-        # 这里应该根据实际支持的文件类型实现
-        return self.extension in ['.shp']
 
     @abstractmethod
     async def core(self):
@@ -63,33 +51,22 @@ class ConvertProcessor(BaseOperationProcessor):
     SUPPORTED_OPERATION = ['convert']
 
     async def core(self):
-        gdf = self.gdf
-        attributes = self.params.get('attributes', [])
-        output_dir = self.params.get('output_path')
-        type_name = self.params.get('type_name')
+        base_name = (
+            os.path.splitext(os.path.basename(self.source))[0]
+            if isinstance(self.source, str) and os.path.exists(self.source)
+            else self.params.get('type_name')
+        )
 
-        if type_name == 'geojson':
-            output_path, feature_count, attribute_count = shp2geojson(self.file_path, gdf, attributes, output_dir)
+        # 使用工厂创建转换器
+        converter = ConverterFactory.get_converter(
+            type_name=self.params.get('type_name'),
+            base_name=base_name,
+            gdf=self.gdf,
+            attributes=self.params.get('attributes', []),
+            custom_output_path=self.params.get('output_path')
+        )
 
-            result = (
-                f"GeoJSON文件已保存至: {output_path}\n"
-                f"要素数量: {feature_count}\n"
-                f"属性字段数量: {attribute_count}"
-            )
-        elif type_name == 'png':
-            output_path, bbox = shp2png(self.file_path, gdf, attributes, output_dir)
-
-            # 解构边界框坐标
-            minx, miny, maxx, maxy = bbox
-
-            result = (
-                f"格式转换文件已保存至: {output_path}\n"
-                f"边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间"
-            )
-        else:
-            raise ValueError(f"暂不支持转换的文件格式: {type_name}")
-
-        return result
+        return converter.convert()
 
 
 class QueryProcessor(BaseOperationProcessor):
@@ -118,7 +95,7 @@ class BufferProcessor(BaseOperationProcessor):
         output_path = self.params.get('output_path')
 
         geojson_saved_path, png_saved_path, shp_saved_path, bbox = (
-            buffer_tool(self.file_path, buffer_create_ids, buffer_distance, buffer_color, output_path))
+            buffer_tool(self.gdf, buffer_create_ids, buffer_distance, buffer_color, output_path))
 
         # 解构边界框坐标
         minx, miny, maxx, maxy = bbox
@@ -148,12 +125,12 @@ class BufferQueryProcessor(BaseOperationProcessor):
         output_path = self.params.get('output_path')
 
         geojson_saved_path, png_saved_path, shp_saved_path, bbox = (
-            buffer_tool(self.file_path, buffer_create_ids, buffer_distance, buffer_color, output_path))
+            buffer_tool(self.gdf, buffer_create_ids, buffer_distance, buffer_color, output_path))
 
         # 解构边界框坐标
         minx, miny, maxx, maxy = bbox
 
-        buffer_query_result = buffer_query_tool(self.file_path, buffer_create_ids, query_file_path, target_ids,
+        buffer_query_result = buffer_query_tool(self.gdf, buffer_create_ids, read_geographic_data(query_file_path), target_ids,
                                                 buffer_distance)
 
         # 格式化结果字符串
@@ -179,7 +156,7 @@ class ShpProcessorFactory:
     }
 
     @classmethod
-    async def create_processor(cls, file_path: str, operation: str, params: dict):
+    async def create_processor(cls, source: Union[str, Dict], operation: str, params: dict):
         """创建处理器实例"""
         try:
             # 验证操作类型是否支持
@@ -190,7 +167,7 @@ class ShpProcessorFactory:
             processor_class = cls.OPERATION_PROCESSORS[operation]
 
             # 创建处理器实例
-            processor = processor_class(file_path, operation, params)
+            processor = processor_class(source, operation, params)
 
             # 执行处理逻辑
             process_result = await processor.core()
@@ -200,6 +177,6 @@ class ShpProcessorFactory:
 
         except Exception as e:
             # 异常处理
-            handler = ShpOperationErrorFactory.get_handler(file_path, operation, params, e)
+            handler = ShpOperationErrorFactory.get_handler(source, operation, params, e)
             response = await handler.format_response()
             return await error(response)

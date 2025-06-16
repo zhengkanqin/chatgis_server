@@ -141,7 +141,6 @@ def _load_file(path: str) -> gpd.GeoDataFrame:
         gdf = None
 
         for encoding in encodings:
-            print(encoding)
             try:
                 gdf = gpd.read_file(path, encoding=encoding)
                 break

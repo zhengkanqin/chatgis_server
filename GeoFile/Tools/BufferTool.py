@@ -18,7 +18,7 @@ matplotlib.use('Agg')
 
 
 def buffer_tool(
-        file_path: str,
+        gdf: gpd.GeoDataFrame,
         buffer_create_ids: List[int],
         buffer_distance: float,
         buffer_color: str,
@@ -33,9 +33,6 @@ def buffer_tool(
     - buffer_distance: 缓冲区距离(米)
     - output_path: 输出路径(可选)
     """
-    # 读取SHP文件
-    gdf = read_geographic_data(file_path)
-
     # 验证输入
     if not buffer_create_ids:
         raise ValueError("必须提供至少一个目标要素ID")
