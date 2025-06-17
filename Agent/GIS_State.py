@@ -33,17 +33,5 @@ def create_default_state() -> GIS_State:
         "act_messages": [],
     }
 
-class GISTask:
-    description:str
-    resource:str
-    state:str
-    sender:str
-    feedback:str
 
-class GISPlan:
-    UserGoal:str
-    TotalThinking:str
-    SubTask:list[GISTask]
 
-    def __init__(self,goal):
-        self.UserGoal=goal

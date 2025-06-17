@@ -1,6 +1,6 @@
 import json
 import os
-from GeoFile.Service.ToolService import read_file, shp_to_type, attribute_query, buffer_query
+from GeoFile.Service.ToolService import read_file, geo_data_convert, attribute_query, buffer_query
 from AgentTools.RAG import Query_GeoFile
 from connection_manager import manager
 from langchain_core.messages import HumanMessage, SystemMessage
