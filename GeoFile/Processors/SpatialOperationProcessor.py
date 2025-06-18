@@ -39,7 +39,7 @@ class BaseOperationProcessor(ABC):
         pass
 
     @abstractmethod
-    async def core(self):
+    def core(self):
         """处理入口方法（需子类实现）"""
         pass
 
@@ -49,7 +49,7 @@ class SpatialQueryProcessor(BaseOperationProcessor):
 
     SUPPORTED_OPERATION = ['spatial_query']
 
-    async def core(self):
+    def core(self):
         origin_gdf = self.gdf
         query_source = self.params.get('query_source')
         query_gdf = read_geographic_data(query_source)
@@ -75,7 +75,7 @@ class SpatialProcessorFactory:
     }
 
     @classmethod
-    async def create_processor(cls, operation: str, source: Union[str, Dict], params: dict):
+    def create_processor(cls, operation: str, source: Union[str, Dict], params: dict):
         """创建处理器实例"""
         # 验证操作类型是否支持
         if operation not in cls.OPERATION_PROCESSORS:
@@ -91,7 +91,7 @@ class SpatialProcessorFactory:
         processor = processor_class(operation, gdf, params)
 
         # 执行处理逻辑
-        process_result = await processor.core()
+        process_result = processor.core()
 
         # 返回成功结果
-        return await success(process_result)
+        return success(process_result)

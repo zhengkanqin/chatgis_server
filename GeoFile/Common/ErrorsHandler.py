@@ -347,20 +347,3 @@ class UnifiedErrorFactory:
             if isinstance(error_obj, error_handler.ERROR_TYPE):
                 return error_handler(tool_name, error_obj)
         return UnifiedBaseErrorHandler(tool_name, error_obj)
-
-
-# 使用示例
-if __name__ == "__main__":
-    try:
-        # 模拟一个出错的函数调用
-        def problematic_function():
-            raise FileNotFoundError("文件不存在: /path/to/shapefile.shp")
-
-
-        problematic_function()
-    except Exception as e:
-        handler = UnifiedErrorFactory.get_handler(
-            tool_name="空间分析工具",
-            error_obj=e
-        )
-        print(handler.format_response())

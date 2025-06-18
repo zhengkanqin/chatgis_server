@@ -6,22 +6,19 @@
 """
 import logging
 
-from connection_manager import manager
 
-
-async def success(data: str):
+def success(data: str):
     """
     生成标准化成功响应
 
     :param data: 需要返回的业务数据（支持任意可序列化类型）
     :return: 结构示例 {"status": "success", "data": ...}
     """
-    await manager.send_message(data)
     print(data)
     return {"status": "success", "data": data}
 
 
-async def error(message: str, error_code: str = None):
+def error(message: str, error_code: str = None):
     """
     生成标准化错误响应
 
@@ -29,7 +26,6 @@ async def error(message: str, error_code: str = None):
     :param error_code: 可选错误码（用于程序识别）
     :return: 结构示例 {"status": "error", "message": ..., "code": ...}
     """
-    await manager.send_message(message)
     logging.error(f"{str(message)}")
     response = {"status": "error", "message": message}
     if error_code:

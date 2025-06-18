@@ -38,7 +38,7 @@ class BaseOperationProcessor(ABC):
             raise ValueError(f"操作类型'{self.operation}'不被支持")
 
     @abstractmethod
-    async def core(self):
+    def core(self):
         """处理入口方法（需子类实现）"""
         pass
 
@@ -48,7 +48,7 @@ class ConvertProcessor(BaseOperationProcessor):
 
     SUPPORTED_OPERATION = ['convert']
 
-    async def core(self):
+    def core(self):
         # 使用工厂创建转换器
         converter = ConverterFactory.get_converter(
             type_name=self.params.get('type_name'),
@@ -65,7 +65,7 @@ class QueryProcessor(BaseOperationProcessor):
 
     SUPPORTED_OPERATION = ['query']
 
-    async def core(self):
+    def core(self):
         gdf = self.gdf
         attributes = self.params.get('attributes', [])
         query_target = self.params.get('query_target', 'all')
@@ -79,7 +79,7 @@ class BufferProcessor(BaseOperationProcessor):
 
     SUPPORTED_OPERATION = ['buffer']
 
-    async def core(self):
+    def core(self):
         buffer_create_ids = self.params.get('buffer_create_ids')
         buffer_distance = self.params.get('buffer_distance')
         buffer_color = self.params.get('buffer_color')
@@ -107,7 +107,7 @@ class BufferQueryProcessor(BaseOperationProcessor):
 
     SUPPORTED_OPERATION = ['buffer_query']
 
-    async def core(self):
+    def core(self):
         buffer_create_ids = self.params.get('buffer_create_ids')
         query_file_path = self.params.get('query_file_path')
         target_ids = self.params.get('target_ids')
@@ -147,7 +147,7 @@ class ShpProcessorFactory:
     }
 
     @classmethod
-    async def create_processor(cls, source: Union[str, Dict], operation: str, params: dict):
+    def create_processor(cls, source: Union[str, Dict], operation: str, params: dict):
         """创建处理器实例"""
         # 验证操作类型是否支持
         if operation not in cls.OPERATION_PROCESSORS:
@@ -160,7 +160,7 @@ class ShpProcessorFactory:
         processor = processor_class(source, operation, params)
 
         # 执行处理逻辑
-        process_result = await processor.core()
+        process_result = processor.core()
 
         # 返回成功结果
-        return await success(process_result)
+        return success(process_result)
