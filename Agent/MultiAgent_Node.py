@@ -1,26 +1,19 @@
 #环境配置
 import json
-import os
 import re
-
-
 from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches,prompt_summary, prompt_reflection
 from Agent.MultiAgent_func import sender_info
 from AgentTools.baidumaptools import map_directions, map_reverse_geocode
-from GeoFile.Service.ToolService import read_file, shp_to_type, attribute_query, buffer_query, buffer_create,spatial_query
+from GeoFile.Service.ToolService import read_file, geo_data_convert, attribute_query, buffer_query, buffer_create,spatial_query
 from AgentTools.RAG import Query_GeoFile, Query_Knowledge
-from connection_manager import manager
-from langchain_core.messages import HumanMessage, SystemMessage ,AIMessage
-from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, StateGraph, MessagesState
+from langgraph.graph import END
 from langgraph.prebuilt import ToolNode
-from langgraph.types import Command, interrupt
-from Agent.GIS_State import Layer, GIS_State
-from typing import List
-import Agent.MultiAgent_Prompt
+from langgraph.types import interrupt
+from Agent.GIS_State import GIS_State
 from AgentTools.map import draw_boundary, draw_circle, draw_image, draw_geojson
+
 
 
 
@@ -34,13 +27,13 @@ map_tools = [
     draw_circle,    #绘制圆
     draw_image,     #绘制瓦片
     draw_geojson,   #绘制GeoJSON的点线面
-    shp_to_type,
+    geo_data_convert,
 ]
 map_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(map_tools)
 #------------------------------------------------------------
 analysis_tools = [
     read_file,
-    shp_to_type,
+    geo_data_convert,
     # attribute_query,
     spatial_query,
     map_directions,
