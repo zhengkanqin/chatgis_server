@@ -69,6 +69,9 @@ def read_geographic_data(
                 # 不是字典则当作文件路径处理
                 try:
                     gdf = _load_file(source)
+
+                    filename = os.path.splitext(os.path.basename(source))[0]
+                    gdf.attrs['source_name'] = filename
                 except Exception as e:
                     gdf = _load_file_exception(e, source)
         except json.JSONDecodeError:

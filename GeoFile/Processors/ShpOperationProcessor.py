@@ -4,16 +4,14 @@ SHP文件操作处理模块
 
 支持基础地理信息分析、几何类型统计、坐标范围提取等功能。
 """
-import os
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, Union
 
-from GeoFile.Common.ErrorsHandler.ShpOperationErrors import ShpOperationErrorFactory
-from GeoFile.Common.Message import success, error
+from GeoFile.Common.Message import success
 from GeoFile.Tools.BufferQueryTool import buffer_query_tool
 from GeoFile.Tools.BufferTool import buffer_tool
-from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from GeoFile.Tools.Gdf2TypeTool import ConverterFactory
+from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from GeoFile.Tools.ShpQueryTools import query_tool
 
 
@@ -51,16 +49,9 @@ class ConvertProcessor(BaseOperationProcessor):
     SUPPORTED_OPERATION = ['convert']
 
     async def core(self):
-        base_name = (
-            os.path.splitext(os.path.basename(self.source))[0]
-            if isinstance(self.source, str) and os.path.exists(self.source)
-            else self.params.get('type_name')
-        )
-
         # 使用工厂创建转换器
         converter = ConverterFactory.get_converter(
             type_name=self.params.get('type_name'),
-            base_name=base_name,
             gdf=self.gdf,
             attributes=self.params.get('attributes', []),
             custom_output_path=self.params.get('output_path')
@@ -158,25 +149,18 @@ class ShpProcessorFactory:
     @classmethod
     async def create_processor(cls, source: Union[str, Dict], operation: str, params: dict):
         """创建处理器实例"""
-        try:
-            # 验证操作类型是否支持
-            if operation not in cls.OPERATION_PROCESSORS:
-                raise ValueError(f"不支持的操作类型: {operation}")
+        # 验证操作类型是否支持
+        if operation not in cls.OPERATION_PROCESSORS:
+            raise ValueError(f"不支持的操作类型: {operation}")
 
-            # 获取对应的处理器类
-            processor_class = cls.OPERATION_PROCESSORS[operation]
+        # 获取对应的处理器类
+        processor_class = cls.OPERATION_PROCESSORS[operation]
 
-            # 创建处理器实例
-            processor = processor_class(source, operation, params)
+        # 创建处理器实例
+        processor = processor_class(source, operation, params)
 
-            # 执行处理逻辑
-            process_result = await processor.core()
+        # 执行处理逻辑
+        process_result = await processor.core()
 
-            # 返回成功结果
-            return await success(process_result)
-
-        except Exception as e:
-            # 异常处理
-            handler = ShpOperationErrorFactory.get_handler(source, operation, params, e)
-            response = await handler.format_response()
-            return await error(response)
+        # 返回成功结果
+        return await success(process_result)

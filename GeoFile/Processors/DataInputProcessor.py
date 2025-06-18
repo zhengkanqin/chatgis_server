@@ -11,8 +11,6 @@ from itertools import combinations
 
 import pandas as pd
 
-from GeoFile.Common.ErrorsHandler.DataInputErrors import GeoFileErrorFactory
-from GeoFile.Common.Message import error
 from GeoFile.Common.Message import success
 from GeoFile.Tools.DataInputTools import classify_field_type
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
@@ -420,25 +418,13 @@ class FileProcessorFactory:
         if ext not in cls.PROCESSORS:
             raise ValueError("2")
 
-        try:
-            ext = os.path.splitext(file_path)[1].lower()
+        ext = os.path.splitext(file_path)[1].lower()
 
-            if ext not in cls.PROCESSORS:
-                raise ValueError("2")
-            processor_class = cls.PROCESSORS[ext]
-            processor = processor_class(file_path)
+        if ext not in cls.PROCESSORS:
+            raise ValueError("2")
+        processor_class = cls.PROCESSORS[ext]
+        processor = processor_class(file_path)
 
-            try:
-                process_result = await processor.core()
-            except Exception as e:
-                handler = GeoFileErrorFactory.get_handler(file_path, e)
-                response = await handler.format_response()
-                if isinstance(response, str):
-                    return await error(response)
-                else:
-                    process_result = await processor.process()
-            return await success(process_result)
-        except Exception as e:
-            handler = GeoFileErrorFactory.get_handler(file_path, e)
-            response = await handler.format_response()
-            return await error(response)
+        process_result = await processor.core()
+
+        return await success(process_result)

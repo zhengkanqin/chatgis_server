@@ -33,19 +33,22 @@ class BaseGdfConverter:
     }
 
     def __init__(self,
-                 base_name: str,
                  gdf: gpd.GeoDataFrame,
+                 type_name: str,
                  attributes: Optional[List[str]] = None,
                  custom_output_path: Optional[str] = None,
                  **kwargs):
-        self.base_name = base_name
         self.gdf = gdf
+        self.type_name = type_name
         self.attributes = attributes or []
         self.custom_output_path = custom_output_path
         self.kwargs = kwargs  # 其他可选参数
 
         # 验证属性字段是否存在
         self._validate_attributes()
+
+        # 自动生成基础名称
+        self.base_name = self._generate_base_name()
 
     def _validate_attributes(self):
         """验证请求的属性字段是否存在"""
@@ -56,6 +59,19 @@ class BaseGdfConverter:
                 raise ValueError(
                     f"请求的属性字段不存在: {', '.join(missing_columns)}"
                 )
+
+    def _generate_base_name(self) -> str:
+        """自动生成基础文件名"""
+        # 尝试从GeoDataFrame属性中获取原始文件名
+        if hasattr(self.gdf, 'attrs') and 'source_name' in self.gdf.attrs:
+            return self.gdf.attrs['source_name']
+
+        # 使用数据特征生成名称
+        feature_count = len(self.gdf)
+        crs_name = self.gdf.crs.name if self.gdf.crs else "no_crs"
+
+        # 创建描述性名称
+        return f"{self.type_name}_data_{feature_count}ft_{crs_name}"
 
     def _prepare_output_dir(self, default_subdir: str) -> str:
         """准备输出目录"""
@@ -409,7 +425,6 @@ class ConverterFactory:
     @classmethod
     def get_converter(cls,
                       type_name: str,
-                      base_name: str,
                       gdf: gpd.GeoDataFrame,
                       attributes: Optional[List[str]] = None,
                       custom_output_path: Optional[str] = None) -> BaseGdfConverter:
@@ -431,8 +446,8 @@ class ConverterFactory:
             raise ValueError(f"暂不支持转换的文件格式: {type_name}")
 
         return converter_class(
-            base_name=base_name,
             gdf=gdf,
+            type_name=type_name,
             attributes=attributes,
             custom_output_path=custom_output_path
         )
