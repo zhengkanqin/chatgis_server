@@ -3,10 +3,11 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from operator import add
 
 def add_or_clear(old: List[Any], new: Union[List[Any], Dict[str, Any]]) -> List[Any]:
-    # 如果收到特殊标志，清空该字段
-    if isinstance(new, dict) and new.get("__clear__") is True:
-        return []
-    # 否则执行正常追加
+    if isinstance(new, dict):
+        if new.get("__clear__") is True:
+            print("-------------------------------------------------------")
+            print(new.get("add",[]))
+            return new.get("add", [])
     return old + new
 
 
@@ -18,7 +19,6 @@ class Layer(TypedDict):
 class GIS_State(TypedDict):
     messages: Annotated[List[BaseMessage], add]
     temp_messages: Annotated[List[BaseMessage], add_or_clear]
-    act_messages: Annotated[List[BaseMessage], add]
     sender:str
     mapMessage:HumanMessage
     layers:List[Layer]
@@ -29,8 +29,7 @@ def create_default_state() -> GIS_State:
         "temp_messages": [],
         "sender": "",
         "mapMessage": HumanMessage(content="无图像信息"),
-        "layers": [],
-        "act_messages": [],
+        "layers": []
     }
 
 
