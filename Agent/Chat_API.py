@@ -10,6 +10,7 @@ import requests
 from Agent.Globals import UserLayers
 from Agent.GeoAgent import GeoTestAgent
 from Agent.MultiAgent import MultiAgent
+from AgentTools.GISPlan import AddPlanSource
 
 # 模块级变量，用于存储中断状态
 is_interrupted = False
@@ -163,6 +164,7 @@ async def event_generator(q: str, files: Optional[List[str]] = None,
             UserLayers.extend(layers)
             short_layers, long_layers = [], []
             for layer in layers:
+                AddPlanSource(f"图层：{layer["name"]}")
                 if len(json.dumps(layer)) < 1000:
                     short_layers.append(layer)
                 else:

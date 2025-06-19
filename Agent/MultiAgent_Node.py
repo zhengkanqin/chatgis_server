@@ -1,12 +1,15 @@
 #环境配置
 import json
 import re
-from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches,prompt_summary, prompt_reflection
-from Agent.MultiAgent_func import sender_info
+from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches, \
+    prompt_reflection, prompt_thinking
+from AgentTools.GISPlan import DoAddSubtask, DoDeleteSubtask, GetAllSubtaskInfo, ReviseSubtask, FinishCurrentSubtask, \
+    FailCurrentSubtask, SetTotalThinking, SetUserGoal, AreAllTasksFinished, GetCurrentSender, GetCurrentSubTask, \
+    GetUpdateTask, GetALlSubTaskBySystem, SetUpdateTask
 from AgentTools.baidumaptools import map_directions, map_reverse_geocode
 from GeoFile.Service.ToolService import read_file, geo_data_convert, attribute_query, buffer_query, buffer_create,spatial_query
 from AgentTools.RAG import Query_GeoFile, Query_Knowledge
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END
 from langgraph.prebuilt import ToolNode
@@ -23,6 +26,8 @@ with open('./config.json', 'r', encoding='utf-8') as configFile:
 
 #大语言模型配置--------------------------------------------------------------------------------------------------------------------------------------------
 map_tools = [
+    FinishCurrentSubtask,
+    FailCurrentSubtask,
     draw_boundary,  #绘制边界
     draw_circle,    #绘制圆
     draw_image,     #绘制瓦片
@@ -32,20 +37,41 @@ map_tools = [
 map_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(map_tools)
 #------------------------------------------------------------
 analysis_tools = [
+    FinishCurrentSubtask,
+    FailCurrentSubtask,
     read_file,
     geo_data_convert,
-    # attribute_query,
     spatial_query,
-    map_directions,
-    map_reverse_geocode
 ]
 analysis_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(analysis_tools)
 #------------------------------------------------------------
-search_tools = [Query_GeoFile]
+search_tools = [
+    FinishCurrentSubtask,
+    FailCurrentSubtask,
+    Query_GeoFile
+]
 search_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(search_tools)
 #------------------------------------------------------------
-knowledge_tools = [Query_Knowledge]
-knowledge_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.1).bind_tools(knowledge_tools)
+live_tools = [
+    FinishCurrentSubtask,
+    FailCurrentSubtask,
+    map_directions,
+    map_reverse_geocode
+]
+live_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(live_tools)
+#------------------------------------------------------------
+knowledge_tools = [
+    Query_Knowledge
+]
+knowledge_llm = ChatOpenAI(model=system_config["深度思考模型名称"], api_key=system_config["深度思考模型密钥"],base_url=system_config["深度思考模型地址"], temperature=0.1).bind_tools(knowledge_tools)
+#------------------------------------------------------------
+plan_tools = [
+    DoAddSubtask,
+    DoDeleteSubtask,
+    GetAllSubtaskInfo,
+    ReviseSubtask
+]
+plan_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.1).bind_tools(plan_tools)
 #------------------------------------------------------------
 no_tool_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.2)
 
@@ -58,63 +84,62 @@ def chat_start(state:GIS_State):
     response = no_tool_llm.invoke(messages)
     return {"messages": [response]}
 
+def thinking(state:GIS_State):
+    messages = state["messages"]
+    messages = [m for m in state["messages"] if not isinstance(m, SystemMessage)]
+    messages.insert(0, SystemMessage(content=prompt_thinking))
+    response = knowledge_llm.invoke(messages)
+    SetTotalThinking(response.content)
+    return {"messages": [response]}
+
 def plan_make(state:GIS_State):
     messages = state["messages"]
     messages = [m for m in state["messages"] if not isinstance(m, SystemMessage)]
     messages.insert(0, SystemMessage(content=prompt_plan))
-    response = knowledge_llm.invoke(messages)
-    if sender_info(response.content):
-        return {
-                "messages":[response],
-                "temp_messages": {"__clear__": True},  #清空临时消息---------------------
-                "sender":sender_info(response.content)
-                }
-    else:
-        return {"messages": [response]}
+    if GetUpdateTask():
+        messages.append(AIMessage(content=GetALlSubTaskBySystem()))
+    response = plan_llm.invoke(messages)
+    return {"messages": [response]}
 
 def map_operation(state:GIS_State):
     messages = state["temp_messages"]
     messages = [m for m in state["temp_messages"] if not isinstance(m, SystemMessage)]
-    messages = state["act_messages"] + messages
     messages.insert(0, SystemMessage(content=prompt_maps))
     response = map_llm.invoke(messages)
-    if response.content == messages[-1].content and "[$fail]" not in messages[-1].content and "[$end]" not in messages[-1].content:
-        return {"messages":[HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")],"temp_messages": [HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")]} #防止陷入死循环
-    if "[$end][$end]" in response.content or "[$fail]" in response.content:
-        return {"messages":[response],"temp_messages": [response],"act_messages": [response]}
+    if response.content == messages[-1].content:
+        return {"temp_messages": [HumanMessage(content="多次输出相同内容，请调用失败提交工具提交异常！")]} #防止陷入死循环
     return {"temp_messages": [response]}
 
 def analysis_operation(state:GIS_State):
     messages = state["temp_messages"]
     messages = [m for m in state["temp_messages"] if not isinstance(m, SystemMessage)]
-    messages = state["act_messages"] + messages
     messages.insert(0, SystemMessage(content=prompt_analysis))
     response = analysis_llm.invoke(messages)
-    if response.content == messages[-1].content and "[$fail]" not in messages[-1].content and "[$end]" not in messages[-1].content:
-        return {"messages":[HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")],"temp_messages": [HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")]} #防止陷入死循环
-    if "[$end][$end]" in response.content or "[$fail]" in response.content:
-        return {"messages":[response],"temp_messages": [response],"act_messages": [response]}
+    if response.content == messages[-1].content:
+        return {"temp_messages": [HumanMessage(content="多次输出相同内容，请调用失败提交工具提交异常！")]}  # 防止陷入死循环
     return {"temp_messages": [response]}
 
 def search_operation(state:GIS_State):
     messages = state["temp_messages"]
     messages = [m for m in state["temp_messages"] if not isinstance(m, SystemMessage)]
-    messages = state["act_messages"] + messages
     messages.insert(0, SystemMessage(content=prompt_searches))
     response = search_llm.invoke(messages)
-    if response.content == messages[-1].content and "[$fail]" not in messages[-1].content and "[$end]" not in messages[-1].content:
-        return {"messages":[HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")],"temp_messages": [HumanMessage(content=f"[$fail]{messages[-1].content}[$fail]")]} #防止陷入死循环
-    if "[$end][$end]" in response.content or "[$fail]" in response.content:
-        print("准备提交")
-        return {"messages":[response],"temp_messages": [response],"act_messages": [response]}
+    if response.content == messages[-1].content:
+        return {"temp_messages": [HumanMessage(content="多次输出相同内容，请调用失败提交工具提交异常！")]}  # 防止陷入死循环
+    return {"temp_messages": [response]}
+
+def live_operation(state:GIS_State):
+    messages = state["temp_messages"]
+    messages = [m for m in state["temp_messages"] if not isinstance(m, SystemMessage)]
+    messages.insert(0, SystemMessage(content=prompt_searches))
+    response = live_llm.invoke(messages)
+    if response.content == messages[-1].content:
+        return {"temp_messages": [HumanMessage(content="多次输出相同内容，请调用失败提交工具提交异常！")]}  # 防止陷入死循环
     return {"temp_messages": [response]}
 
 def summary_operation(state:GIS_State):
-    messages = state["messages"]
-    messages = [m for m in state["messages"] if not isinstance(m, SystemMessage)]
-    messages.append(SystemMessage(content=prompt_summary))  #尝试直接放在最后-----------------------------
-    response = no_tool_llm.invoke(messages)
-    return {"temp_messages": [response]}
+    response = AIMessage(content=GetCurrentSubTask())
+    return {"temp_messages": {"__clear__":True,"add":[response]}}
 
 def reflection_operation(state:GIS_State):
     messages = state["messages"]
@@ -149,44 +174,60 @@ map_tool_node = ToolNode(map_tools,messages_key="temp_messages") #地图操作�
 analysis_tool_node = ToolNode(analysis_tools,messages_key="temp_messages") #地理文件分析操作工具节点集
 search_tool_node = ToolNode(search_tools,messages_key="temp_messages") #地理文件及相关知识搜索工具节点集
 knowledge_tool_node = ToolNode(knowledge_tools) #知识搜索节点
-
+live_tool_node = ToolNode(live_tools,messages_key="temp_messages")
+plan_tool_node = ToolNode(plan_tools)
 #边配置-------------------------------------------------------------------------------------------------------------------
 
 #END
 #chat_start_node
+#thinking_node
 #plan_make_mode
 #summary_operation_node
+
 #map_operation_node
 #analysis_operation_node
 #search_operation_node
+#live_operation_node
+
 #reflection_operation_node
 #human_branch_operation_node
 #human_plan_operation_node
+
 #map_tool_node
 #analysis_tool_node
 #search_tool_node
-#knowledge_tool_node
+#plan_tool_node
+#thinking_tool_node
 
 def condition_chat_start(state:GIS_State):
     last_messages = state["messages"][-1]
     if "[$end][$end]" in last_messages.content:
         return END
     else:
-        return "plan_make_node"
+        SetUserGoal(last_messages.content)
+        return "thinking_node"
 
 def condition_plan_make(state:GIS_State):
     last_messages = state["messages"][-1]
     if last_messages.tool_calls:
-        return "knowledge_tool_node"
+        return "plan_tool_node"
     if "[$help]" in last_messages.content:
         return "human_plan_operation_node"
     if "[$end]" in last_messages.content:
         return "reflection_operation_node"
-    if "[$sender]" in last_messages.content:
+    if "[$execute]" in last_messages.content:
         return "summary_operation_node"
     else:
         print("系统异常！轮询失败！")
         return "plan_make_node"
+
+def condition_thinking(state:GIS_State):
+    last_messages = state["messages"][-1]
+    if last_messages.tool_calls:
+        return "thinking_tool_node"
+    else:
+        return "plan_make_node"
+
 
 def condition_reflection(state:GIS_State):
     last_messages = state["messages"][-1]
@@ -196,16 +237,21 @@ def condition_reflection(state:GIS_State):
         return END
 
 def condition_summary(state:GIS_State):
-    sender = state["sender"]
-    if "搜索" in sender:
-        return "search_operation_node"
-    if "分析" in sender:
-        return "analysis_operation_node"
-    if "图层" in sender:
-        return "map_operation_node"
-    else:
-        print("系统异常！摘要分发失败！")
+    if AreAllTasksFinished():
+        SetUpdateTask()
         return "plan_make_node"
+    else:
+        sender = GetCurrentSender()
+        if "搜索" in sender:
+            return "search_operation_node"
+        if "分析" in sender:
+            return "analysis_operation_node"
+        if "图层" in sender:
+            return "map_operation_node"
+        if "生活" in sender:
+            return "live_operation_node"
+    print("系统异常，委托任务失败")
+    return "plan_make_node"
 
 def condition_search(state:GIS_State):
     last_messages = state["temp_messages"][-1]
@@ -214,11 +260,11 @@ def condition_search(state:GIS_State):
     if "[$help]" in last_messages.content:
         return "human_branch_operation_node"
     if "[$end]" in last_messages.content:
-        return "plan_make_node"
+        return "summary_operation_node"
     if "[$fail]" in last_messages.content:
+        SetUpdateTask()
         return "plan_make_node"
     else:
-        print("系统异常！查询提交失败！")
         return "search_operation_node"
 
 def condition_analysis(state:GIS_State):
@@ -228,11 +274,11 @@ def condition_analysis(state:GIS_State):
     if "[$help]" in last_messages.content:
         return "human_branch_operation_node"
     if "[$end]" in last_messages.content:
-        return "plan_make_node"
+        return "summary_operation_node"
     if "[$fail]" in last_messages.content:
+        SetUpdateTask()
         return "plan_make_node"
     else:
-        print("系统异常！分析提交失败！")
         return "analysis_operation_node"
 
 def condition_map(state:GIS_State):
@@ -242,26 +288,82 @@ def condition_map(state:GIS_State):
     if "[$help]" in last_messages.content:
         return "human_branch_operation_node"
     if "[$end]" in last_messages.content:
-        return "plan_make_node"
+        return "summary_operation_node"
     if "[$fail]" in last_messages.content:
+        SetUpdateTask()
         return "plan_make_node"
     else:
-        print("系统异常！地图操作提交失败！")
         return "map_operation_node"
 
+def condition_live(state:GIS_State):
+    last_messages = state["temp_messages"][-1]
+    if last_messages.tool_calls:
+        return "live_tool_node"
+    if "[$help]" in last_messages.content:
+        return "human_branch_operation_node"
+    if "[$end]" in last_messages.content:
+        return "summary_operation_node"
+    if "[$fail]" in last_messages.content:
+        SetUpdateTask()
+        return "plan_make_node"
+    else:
+        return "live_operation_node"
+
+
+
 def condition_human_branch(state:GIS_State):
-    sender = state["sender"]
+    sender = GetCurrentSender()
     if "搜索" in sender:
         return "search_operation_node"
     if "分析" in sender:
         return "analysis_operation_node"
     if "图层" in sender:
         return "map_operation_node"
+    if "生活" in sender:
+        return "live_operation_node"
     else:
         print("系统异常！轮询失败！")
         return END
 
+def condition_search_tool_node(state:GIS_State):
+    last_messages = state["temp_messages"][-1]
+    if "[$end]" in last_messages.content:
+        return "summary_operation_node"
+    if "[$fail]" in last_messages.content:
+        SetUpdateTask()
+        return "plan_make_node"
+    else:
+        return "search_operation_node"
 
+def condition_analysis_tool_node(state:GIS_State):
+    last_messages = state["temp_messages"][-1]
+    if "[$end]" in last_messages.content:
+        return "summary_operation_node"
+    if "[$fail]" in last_messages.content:
+        SetUpdateTask()
+        return "plan_make_node"
+    else:
+        return "analysis_operation_node"
+
+def condition_map_tool_node(state:GIS_State):
+    last_messages = state["temp_messages"][-1]
+    if "[$end]" in last_messages.content:
+        return "summary_operation_node"
+    if "[$fail]" in last_messages.content:
+        SetUpdateTask()
+        return "plan_make_node"
+    else:
+        return "map_operation_node"
+
+def condition_live_tool_node(state:GIS_State):
+    last_messages = state["temp_messages"][-1]
+    if "[$end]" in last_messages.content:
+        return "summary_operation_node"
+    if "[$fail]" in last_messages.content:
+        SetUpdateTask()
+        return "plan_make_node"
+    else:
+        return "live_operation_node"
 
 
 

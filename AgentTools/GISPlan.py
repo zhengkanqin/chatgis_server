@@ -1,14 +1,14 @@
-from langchain.tools import tool
+import json
 
+from langchain.tools import tool
+from connection_manager import manager
 class GISTask:
     description:str
-    resource:str
     state:bool
     sender:str
     feedback:str
-    def __init__(self, description:str, resource:str, state:bool, sender:str, feedback:str):
+    def __init__(self, description:str,  state:bool, sender:str, feedback:str):
         self.description = description
-        self.resource = resource
         self.state = state
         self.sender = sender
         self.feedback = feedback
@@ -18,17 +18,21 @@ class GISPlan:
     UserGoal:str
     TotalThinking:str
     SubTask:list[GISTask]
-
+    Resource:list[str]
+    IfUpdateTask:bool
     def __init__(self):
         self.UserGoal=""
         self.TotalThinking=""
         self.SubTask=[]
+        self.Resource=[]
+        self.IfUpdateTask=False
 
     def clear_(self):
         self.UserGoal=""
         self.TotalThinking=""
         self.SubTask=[]
-        return "已清空计划"
+        self.Resource=[]
+        self.IfUpdateTask=False
 
     def SetUserGoal_(self,userGoal:str):
         self.UserGoal=userGoal
@@ -50,30 +54,49 @@ class GISPlan:
         self.SubTask = self.SubTask[:ordination]
         return self.GetAllSubtask_()
 
-    def ReviseSubTask_(self,ordination:int,task:GISTask):
-        self.SubTask[ordination]=task
-        return self.GetAllSubtask_()
-
     def GetCurrentSubTask_(self) -> str:
+
+        res_md = "## 📦 当前资源列表\n"
+        if self.Resource:
+            for i, res in enumerate(self.Resource, 1):
+                res_md += f"{i}. {res}\n"
+        else:
+            res_md += "暂无资源\n"
+
         for task in self.SubTask:
             if not task.state:
                 md = f"## ⏳ 当前执行子任务\n"
                 md += f"- **任务描述**：{task.description}\n"
-                md += f"- **资源链接**：{task.resource}\n"
-                md += f"- **状态**：🕗 未完成\n"
-                md += f"- **委托者**：{task.sender}\n"
-                md += f"- **当前反馈**：{task.feedback if task.feedback else '（无反馈）'}\n"
+                md += res_md
                 return md
-        return "所有任务已完成"
+        return "[$end]所有任务已完成[$end]"
 
-    def FinishCurrentSubTask_(self):
+    def GetCurrentSender_(self) -> str:
         for task in self.SubTask:
             if not task.state:
-                task.state = True
-                return self.GetAllSubtask_()
+                return task.sender
+        return "[$fail]系统异常，委托失败[$fail]"
 
+    def IsUpdateTask_(self):
+        print(f"当前的IsUpdateTask是：{self.IfUpdateTask}")
+        if self.IfUpdateTask:
+            self.IfUpdateTask = False
+            return True
+        else:
+            return False
+
+    def SetUpdateTask_(self):
+        self.IfUpdateTask = True
 
     def GetAllInfo_(self) -> str:
+
+        res_md = "## 📦 当前资源列表\n"
+        if self.Resource:
+            for i, res in enumerate(self.Resource, 1):
+                res_md += f"{i}. {res}\n"
+        else:
+            res_md += "暂无资源\n"
+
         md = f"## 🧠 总体计划\n{self.TotalThinking}\n\n"
         md += "## 🧩 子任务列表\n"
         if not self.SubTask:
@@ -83,20 +106,19 @@ class GISPlan:
                 md += f"### {idx}. {task.description}\n"
                 md += f"- 👤 委托者: {task.sender}\n"
                 md += f"- 💬 反馈: {task.feedback}\n\n"
-                md += f"- 📦 资源: {task.resource}\n"
                 md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n"
+        md +=res_md
         return md
 
     def GetAllSubtask_(self):
         if not self.SubTask:
             return "暂无子任务"
         else:
-            md = "## 🧩 子任务列表\n"
+            md = "## 🧩 当前子任务列表\n"
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
                 md += f"- 👤 委托者: {task.sender}\n"
                 md += f"- 💬 反馈: {task.feedback}\n\n"
-                md += f"- 📦 资源: {task.resource}\n"
                 md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n"
             return md
 
@@ -113,16 +135,20 @@ def DoAddSubtask(description:str, resource:str, sender:str):
     resource(str): 任务相关文件、资源、信息、图层名
     sender(str): 委托者名称
     """
-    return System_plan.AddSubTask_(GISTask(description, resource, False, sender, ""))
+    response = System_plan.AddSubTask_(GISTask(description, False,  sender,""))
+    UpdatePlanToUI()
+    return response
 
 @tool
 def DoDeleteSubtask(upto_index: int):
     """
     删除某个子任务及其后所有任务（根据索引）
 
-    upto_index(int): 要保留的任务数。例如传入2，则只保留前2项（索引0和1）
+    upto_index(int): 保留的任务数。例如传入2，则只保留前2项（索引0和1）
     """
-    return System_plan.DeleteSubTask_(upto_index)
+    response =  System_plan.DeleteSubTask_(upto_index)
+    UpdatePlanToUI()
+    return response
 
 @tool
 def GetAllSubtaskInfo():
@@ -139,23 +165,21 @@ def GetPlanFullInfo():
     return System_plan.GetAllInfo_()
 
 @tool
-def ReviseSubtask(index: int, description: str = "", resource: str = "", sender: str = ""):
+def ReviseSubtask(index: int, description: str = "", sender: str = ""):
     """
     修改指定索引的子任务的字段
 
-    index(int): 子任务索引（从0开始）
+    index(int): 待修改的子任务索引（从0开始）
     description(str): 新描述（可选）
-    resource(str): 新资源路径或名称（可选）
     sender(str): 新委托人（可选）
     """
     if 0 <= index < len(System_plan.SubTask):
         task = System_plan.SubTask[index]
         if description:
             task.description = description
-        if resource:
-            task.resource = resource
         if sender:
             task.sender = sender
+        UpdatePlanToUI()
         return System_plan.GetAllSubtask_()
     else:
         return f"❌ 无效的任务索引：{index}"
@@ -165,51 +189,46 @@ def FinishCurrentSubtask(resource: str = "", feedback: str = ""):
     """
     完成当前未完成的子任务，并可更新资源与反馈信息
 
-    resource(str): 可选，更新后的资源信息
-    feedback(str): 可选，更新后的反馈说明
+    resource(str): 新增全局资源
+    feedback(str): 精简的任务执行反馈或文字形式的结果
     """
     for task in System_plan.SubTask:
         if not task.state:
             task.state = True
             if resource:
-                task.resource = resource
+                System_plan.Resource.append(resource)
             if feedback:
                 task.feedback = feedback
-            return f"✅ 已完成任务：{task.description}\n\n" + System_plan.GetAllSubtask_()
-    return "🎉 所有子任务已完成，无需更新。"
+    UpdatePlanToUI()
+    SetUpdateTask()
+    return "[$end][$end]"
+
 
 @tool
-def FailCurrentSubtask(resource: str = "", feedback: str = "任务失败"):
+def FailCurrentSubtask(feedback: str = "任务失败"):
     """
     将当前未完成的任务标记为失败，添加反馈说明或资源信息
 
-    resource(str): 可选，更新资源信息
-    feedback(str): 可选，说明失败原因，默认为"任务失败"
+    feedback(str): 失败原因"
     """
     for task in System_plan.SubTask:
         if not task.state:
             task.feedback = feedback
-            if resource:
-                task.resource = resource
-            return f"⚠️ 已标记任务失败：{task.description}\n\n" + System_plan.GetAllSubtask_()
-    return "🎉 所有子任务已完成，无失败任务。"
+    UpdatePlanToUI()
+    SetUpdateTask()
+    return "[$fail][$fail]"
 
-@tool
-def AreAllTasksFinished() -> str:
-    """
-    判断当前所有子任务是否全部完成。
 
-    返回 Markdown 格式的自然语言说明。
-    """
+def AreAllTasksFinished() -> bool:
     total = len(System_plan.SubTask)
     finished = sum(1 for task in System_plan.SubTask if task.state)
 
     if total == 0:
-        return "📭 当前没有任何子任务。"
+        return True
     elif finished == total:
-        return f"✅ 所有子任务已完成，共 {total} 项。"
+        return True
     else:
-        return f"⏳ 尚有未完成任务：{finished}/{total} 已完成。"
+        return False
 
 def clearAll():
     System_plan.clear_()
@@ -225,3 +244,28 @@ def GetUserGoal():
 
 def GetTotalThinking():
     return System_plan.GetTotalThinking_()
+
+def GetCurrentSender():
+    return System_plan.GetCurrentSender_()
+
+def GetCurrentSubTask():
+    return System_plan.GetCurrentSubTask_()
+
+def SetUpdateTask():
+    System_plan.SetUpdateTask_()
+
+def GetUpdateTask():
+    return System_plan.IsUpdateTask_()
+
+def GetALlSubTaskBySystem():
+    return System_plan.GetAllSubtask_()
+
+def AddPlanSource(resource:str):
+    System_plan.Resource.extend(resource)
+
+async def UpdatePlanToUI():
+    ToUI = {
+        "type":"plan",
+        "data":GetALlSubTaskBySystem()
+    }
+    manager.send_message(json.dumps(ToUI))
