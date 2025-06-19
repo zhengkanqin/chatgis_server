@@ -9,8 +9,7 @@ from typing import Dict, Any, Union
 
 import geopandas as gpd
 
-from GeoFile.Common.ErrorsHandler.SpatialOperationErrors import SpatialOperationErrorFactory
-from GeoFile.Common.Message import success, error
+from GeoFile.Common.Message import success
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from GeoFile.Tools.SpatialQueryTool import spatial_query_tool
 
@@ -40,7 +39,7 @@ class BaseOperationProcessor(ABC):
         pass
 
     @abstractmethod
-    async def core(self):
+    def core(self):
         """处理入口方法（需子类实现）"""
         pass
 
@@ -50,7 +49,7 @@ class SpatialQueryProcessor(BaseOperationProcessor):
 
     SUPPORTED_OPERATION = ['spatial_query']
 
-    async def core(self):
+    def core(self):
         origin_gdf = self.gdf
         query_source = self.params.get('query_source')
         query_gdf = read_geographic_data(query_source)
@@ -76,30 +75,23 @@ class SpatialProcessorFactory:
     }
 
     @classmethod
-    async def create_processor(cls, operation: str, source: Union[str, Dict], params: dict):
+    def create_processor(cls, operation: str, source: Union[str, Dict], params: dict):
         """创建处理器实例"""
-        try:
-            # 验证操作类型是否支持
-            if operation not in cls.OPERATION_PROCESSORS:
-                raise ValueError(f"不支持的操作类型: {operation}")
+        # 验证操作类型是否支持
+        if operation not in cls.OPERATION_PROCESSORS:
+            raise ValueError(f"不支持的操作类型: {operation}")
 
-            queried_condition = params.get('query_condition')
-            gdf = read_geographic_data(source, queried_condition)
+        queried_condition = params.get('query_condition')
+        gdf = read_geographic_data(source, queried_condition)
 
-            # 获取对应的处理器类
-            processor_class = cls.OPERATION_PROCESSORS[operation]
+        # 获取对应的处理器类
+        processor_class = cls.OPERATION_PROCESSORS[operation]
 
-            # 创建处理器实例
-            processor = processor_class(operation, gdf, params)
+        # 创建处理器实例
+        processor = processor_class(operation, gdf, params)
 
-            # 执行处理逻辑
-            process_result = await processor.core()
+        # 执行处理逻辑
+        process_result = processor.core()
 
-            # 返回成功结果
-            return await success(process_result)
-
-        except Exception as e:
-            # 异常处理
-            handler = SpatialOperationErrorFactory.get_handler(operation, params, e)
-            response = await handler.format_response()
-            return await error(response)
+        # 返回成功结果
+        return success(process_result)

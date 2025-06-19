@@ -6,17 +6,14 @@
 """
 import logging
 import os
-from abc import ABC, abstractmethod
+from abc import ABC
 from itertools import combinations
 
 import pandas as pd
 
-from GeoFile.Common.ErrorsHandler.DataInputErrors import GeoFileErrorFactory
-from GeoFile.Common.Message import error
 from GeoFile.Common.Message import success
 from GeoFile.Tools.DataInputTools import classify_field_type
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
-from connection_manager import manager
 
 
 class BaseFileProcessor(ABC):
@@ -45,8 +42,7 @@ class BaseFileProcessor(ABC):
         """检查扩展名是否支持"""
         return self.extension in self.SUPPORTED_EXTENSIONS
 
-    @abstractmethod
-    async def core(self):
+    def core(self):
         """处理入口方法（需子类实现）"""
         pass
 
@@ -56,11 +52,11 @@ class ShpProcessor(BaseFileProcessor):
 
     SUPPORTED_EXTENSIONS = ['.shp', '.json', '.geojson']
 
-    async def core(self):
+    def core(self):
         gdf = read_geographic_data(self.file_path)
-        return await self.process(gdf)
+        return self.process(gdf)
 
-    async def process(self, gdf):
+    def process(self, gdf):
         # 计算坐标范围
         bounds = gdf.total_bounds
         coord_range = {
@@ -176,7 +172,6 @@ class ShpProcessor(BaseFileProcessor):
 
         # 发送处理结果
         result_msg = "\n".join(output)
-        await manager.send_message(result_msg)
 
         return result_msg
 
@@ -221,7 +216,7 @@ class TabularProcessor(BaseFileProcessor):
 
         return None
 
-    async def core(self):
+    def core(self):
         # ================= 文件验证 =================
         if not os.path.exists(self.file_path):
             raise FileNotFoundError
@@ -398,7 +393,6 @@ class TabularProcessor(BaseFileProcessor):
 
         # ================= 结果推送 =================
         result_msg = "\n".join(output)
-        await manager.send_message(result_msg)
 
         return result_msg
 
@@ -412,7 +406,7 @@ class FileProcessorFactory:
     }
 
     @classmethod
-    async def create_processor(cls, file_path: str):
+    def create_processor(cls, file_path: str):
         """创建处理器实例"""
 
         ext = os.path.splitext(file_path)[1].lower()
@@ -420,25 +414,13 @@ class FileProcessorFactory:
         if ext not in cls.PROCESSORS:
             raise ValueError("2")
 
-        try:
-            ext = os.path.splitext(file_path)[1].lower()
+        ext = os.path.splitext(file_path)[1].lower()
 
-            if ext not in cls.PROCESSORS:
-                raise ValueError("2")
-            processor_class = cls.PROCESSORS[ext]
-            processor = processor_class(file_path)
+        if ext not in cls.PROCESSORS:
+            raise ValueError("2")
+        processor_class = cls.PROCESSORS[ext]
+        processor = processor_class(file_path)
 
-            try:
-                process_result = await processor.core()
-            except Exception as e:
-                handler = GeoFileErrorFactory.get_handler(file_path, e)
-                response = await handler.format_response()
-                if isinstance(response, str):
-                    return await error(response)
-                else:
-                    process_result = await processor.process()
-            return await success(process_result)
-        except Exception as e:
-            handler = GeoFileErrorFactory.get_handler(file_path, e)
-            response = await handler.format_response()
-            return await error(response)
+        process_result = processor.core()
+
+        return success(process_result)

@@ -3,6 +3,8 @@ from typing import Optional, List, Dict, Any, Union
 
 from langchain_core.tools import tool
 
+from GeoFile.Common.ErrorsHandler import UnifiedErrorFactory
+from GeoFile.Common.Message import error
 from GeoFile.Processors.DataInputProcessor import FileProcessorFactory
 from GeoFile.Processors.ShpOperationProcessor import ShpProcessorFactory
 from GeoFile.Processors.SpatialOperationProcessor import SpatialProcessorFactory
@@ -16,7 +18,12 @@ async def read_file(file_path: str):
     参数:
     - file_path: 需要读取的文件路径
     """
-    return await FileProcessorFactory.create_processor(file_path)
+    try:
+        return await FileProcessorFactory.create_processor(file_path)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("数据录入工具", error_obj=e)
+        response = handler.format_response()
+        return await error(response)
 
 
 # @tool()
@@ -99,7 +106,12 @@ async def geo_data_convert(source: Union[str, Dict],
     if output_path:
         params.update({"output_path": output_path})
 
-    return await ShpProcessorFactory.create_processor(source, "convert", params)
+    try:
+        return await ShpProcessorFactory.create_processor(source, "convert", params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("数据格式转换工具", error_obj=e)
+        response = handler.format_response()
+        return await error(response)
 
 
 @tool()
@@ -128,7 +140,12 @@ async def attribute_query(file_path: str,
     if target_ids:
         params.update({"target_ids": target_ids})
 
-    return await ShpProcessorFactory.create_processor(file_path, "query", params)
+    try:
+        return await ShpProcessorFactory.create_processor(file_path, "query", params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("属性查询工具", error_obj=e)
+        response = handler.format_response()
+        return await error(response)
 
 
 @tool()
@@ -154,7 +171,12 @@ async def buffer_create(file_path: str,
     if output_path:
         params.update({"output_path": output_path})
 
-    return await ShpProcessorFactory.create_processor(file_path, "buffer", params)
+    try:
+        return await ShpProcessorFactory.create_processor(file_path, "buffer", params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("缓冲区创建工具", error_obj=e)
+        response = handler.format_response()
+        return await error(response)
 
 
 @tool()
@@ -186,7 +208,12 @@ async def buffer_query(file_path: str,
     if output_path:
         params.update({"output_path": output_path})
 
-    return await ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
+    try:
+        return await ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("缓冲区查询工具", error_obj=e)
+        response = handler.format_response()
+        return await error(response)
 
 
 @tool()
@@ -225,7 +252,12 @@ async def spatial_query(source: Union[str, Dict],
     if queried_condition:
         params.update({"queried_condition": queried_condition})
 
-    return await SpatialProcessorFactory.create_processor("spatial_query", source, params)
+    try:
+        return await SpatialProcessorFactory.create_processor("spatial_query", source, params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("空间查询工具", error_obj=e)
+        response = handler.format_response()
+        return await error(response)
 
 
 AnalysisTools = [read_file, geo_data_convert, attribute_query, buffer_query, spatial_query]
