@@ -19,11 +19,11 @@ async def read_file(file_path: str):
     - file_path: 需要读取的文件路径
     """
     try:
-        return await FileProcessorFactory.create_processor(file_path)
+        return FileProcessorFactory.create_processor(file_path)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("数据录入工具", error_obj=e)
         response = handler.format_response()
-        return await error(response)
+        return error(response)
 
 
 # @tool()
@@ -107,11 +107,11 @@ async def geo_data_convert(source: Union[str, Dict],
         params.update({"output_path": output_path})
 
     try:
-        return await ShpProcessorFactory.create_processor(source, "convert", params)
+        return ShpProcessorFactory.create_processor(source, "convert", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("数据格式转换工具", error_obj=e)
         response = handler.format_response()
-        return await error(response)
+        return error(response)
 
 
 @tool()
@@ -141,11 +141,11 @@ async def attribute_query(file_path: str,
         params.update({"target_ids": target_ids})
 
     try:
-        return await ShpProcessorFactory.create_processor(file_path, "query", params)
+        return ShpProcessorFactory.create_processor(file_path, "query", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("属性查询工具", error_obj=e)
         response = handler.format_response()
-        return await error(response)
+        return error(response)
 
 
 @tool()
@@ -172,11 +172,11 @@ async def buffer_create(file_path: str,
         params.update({"output_path": output_path})
 
     try:
-        return await ShpProcessorFactory.create_processor(file_path, "buffer", params)
+        return ShpProcessorFactory.create_processor(file_path, "buffer", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("缓冲区创建工具", error_obj=e)
         response = handler.format_response()
-        return await error(response)
+        return error(response)
 
 
 @tool()
@@ -209,11 +209,11 @@ async def buffer_query(file_path: str,
         params.update({"output_path": output_path})
 
     try:
-        return await ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
+        return ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("缓冲区查询工具", error_obj=e)
         response = handler.format_response()
-        return await error(response)
+        return error(response)
 
 
 @tool()
@@ -253,11 +253,72 @@ async def spatial_query(source: Union[str, Dict],
         params.update({"queried_condition": queried_condition})
 
     try:
-        return await SpatialProcessorFactory.create_processor("spatial_query", source, params)
+        return SpatialProcessorFactory.create_processor("spatial_query", source, params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("空间查询工具", error_obj=e)
         response = handler.format_response()
-        return await error(response)
+        return error(response)
 
 
-AnalysisTools = [read_file, geo_data_convert, attribute_query, buffer_query, spatial_query]
+@tool()
+async def cluster_analysis(
+        source: Union[str, Dict],
+        algorithm: Optional[str] = 'kmeans',
+        use_attributes: Optional[List[str]] = None,
+        n_clusters: Optional[int] = None,
+        eps: Optional[float] = None
+):
+    """
+    执行空间聚类分析：对空间数据进行多种聚类算法分析
+
+    参数:
+    - source: 待进行聚类分析的数据源，支持以下格式：
+        * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+        * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
+        * 图层引用(str): "[$layer]精确图层名[$layer]"
+
+    - algorithm: 聚类算法类型 (可选，默认为'kmeans')
+        * 支持算法:
+            'kmeans' - K均值聚类
+            'dbscan' - 基于密度的空间聚类
+            'agglomerative' - 层次聚类
+            'meanshift' - 均值漂移聚类
+            'spectral' - 谱聚类
+            'optics' - OPTICS密度聚类
+
+    - use_attributes: 用于聚类的属性字段列表 (可选)
+        * 类型: List[str]
+        * 示例: ["population", "income", "elevation"]
+        * 说明: 默认仅使用空间坐标特征，添加属性字段可实现空间+属性联合聚类
+
+    - n_clusters: 聚类数量 (可选，部分算法必需)
+        * 类型: int
+        * 适用算法: kmeans, agglomerative, spectral
+        * 默认值:
+            kmeans: 5
+            agglomerative: 5
+            spectral: 5
+
+    - eps: DBSCAN算法的邻域半径 (可选，DBSCAN算法必需)
+        * 类型: float
+        * 适用算法: dbscan
+        * 默认值: 0.2
+    """
+    params = {}
+    params.update({"algorithm": algorithm})
+    if use_attributes:
+        params.update({"attributes": use_attributes})
+    if n_clusters:
+        params.update({"n_clusters": n_clusters})
+    if eps:
+        params.update({"eps": eps})
+
+    try:
+        return SpatialProcessorFactory.create_processor("cluster_analysis", source, params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("空间聚类工具", error_obj=e)
+        response = handler.format_response()
+        return error(response)
+
+
+AnalysisTools = [read_file, geo_data_convert, attribute_query, buffer_query, spatial_query, cluster_analysis]

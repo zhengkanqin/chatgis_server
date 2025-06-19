@@ -1,7 +1,7 @@
 # GeoFile/Tools/Gdf2TypeTool.py
 import os
 from datetime import datetime
-from typing import Optional, List, Type, Tuple
+from typing import Optional, List, Type, Tuple, Any
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -66,12 +66,8 @@ class BaseGdfConverter:
         if hasattr(self.gdf, 'attrs') and 'source_name' in self.gdf.attrs:
             return self.gdf.attrs['source_name']
 
-        # 使用数据特征生成名称
-        feature_count = len(self.gdf)
-        crs_name = self.gdf.crs.name if self.gdf.crs else "no_crs"
-
         # 创建描述性名称
-        return f"{self.type_name}_data_{feature_count}ft_{crs_name}"
+        return f"{self.type_name}"
 
     def _prepare_output_dir(self, default_subdir: str) -> str:
         """准备输出目录"""
@@ -89,9 +85,13 @@ class BaseGdfConverter:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"{self.base_name}_{timestamp}.{extension}"
 
-    def convert(self) -> str:
+    def convert(self) -> Any:
         """执行转换操作，子类必须实现此方法"""
         raise NotImplementedError("子类必须实现convert方法")
+
+    def result(self) -> str:
+        """执行输出操作，子类必须实现此方法"""
+        raise NotImplementedError("子类必须实现result方法")
 
     def get_bbox(self) -> Tuple[float, float, float, float]:
         """获取地理范围边界框"""
@@ -102,7 +102,18 @@ class BaseGdfConverter:
 class GdfToGeoJSONConverter(BaseGdfConverter):
     """将GeoDataFrame转换为GeoJSON"""
 
-    def convert(self) -> str:
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None,
+                 **kwargs):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
         """执行GeoJSON转换"""
         # 筛选数据
         if self.attributes:
@@ -123,21 +134,36 @@ class GdfToGeoJSONConverter(BaseGdfConverter):
         # 保存为GeoJSON文件
         gdf.to_file(output_path, driver="GeoJSON")
 
-        return self.result(output_path, feature_count, attribute_count)
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
 
-    @staticmethod
-    def result(output_path, feature_count, attribute_count) -> str:
+        return output_path, feature_count, attribute_count
+
+    def result(self) -> str:
         return (
-            f"GeoJSON文件已保存至: {output_path}\n"
-            f"要素数量: {feature_count}\n"
-            f"属性字段数量: {attribute_count}"
+            f"GeoJSON文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}"
         )
 
 
 class GdfToShapefileConverter(BaseGdfConverter):
     """将GeoDataFrame转换为Shapefile"""
 
-    def convert(self) -> str:
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None,
+                 **kwargs):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.file_count = None
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
         """执行Shapefile转换"""
         # 筛选数据
         if self.attributes:
@@ -161,22 +187,37 @@ class GdfToShapefileConverter(BaseGdfConverter):
         # 统计生成的文件数量
         file_count = len([f for f in os.listdir(output_dir) if f.startswith(os.path.basename(output_file)[:-4])])
 
-        return self.result(output_path, feature_count, attribute_count, file_count)
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
+        self.file_count = file_count
 
-    @staticmethod
-    def result(output_path: str, feature_count: int, attribute_count: int, file_count: int) -> str:
+        return output_path, feature_count, attribute_count, file_count
+
+    def result(self) -> str:
         return (
-            f"Shapefile主文件已保存至: {output_path}\n"
-            f"要素数量: {feature_count}\n"
-            f"属性字段数量: {attribute_count}\n"
-            f"生成文件总数: {file_count}"
+            f"Shapefile主文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}\n"
+            f"生成文件总数: {self.file_count}"
         )
 
 
 class GdfToGeoPackageConverter(BaseGdfConverter):
     """将GeoDataFrame转换为GeoPackage"""
 
-    def convert(self) -> str:
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None,
+                 **kwargs):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
         """执行GeoPackage转换"""
         # 筛选数据
         if self.attributes:
@@ -197,21 +238,35 @@ class GdfToGeoPackageConverter(BaseGdfConverter):
         # 保存为GeoPackage
         gdf.to_file(output_path, driver="GPKG")
 
-        return self.result(output_path, feature_count, attribute_count)
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
 
-    @staticmethod
-    def result(output_path: str, feature_count: int, attribute_count: int) -> str:
+        return output_path, feature_count, attribute_count
+
+    def result(self) -> str:
         return (
-            f"GeoPackage文件已保存至: {output_path}\n"
-            f"要素数量: {feature_count}\n"
-            f"属性字段数量: {attribute_count}"
+            f"GeoPackage文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}"
         )
 
 
 class GdfToKMLConverter(BaseGdfConverter):
     """将GeoDataFrame转换为KML"""
 
-    def convert(self) -> str:
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None,
+                 **kwargs):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
         """执行KML转换"""
         # 筛选数据
         if self.attributes:
@@ -232,21 +287,35 @@ class GdfToKMLConverter(BaseGdfConverter):
         # 保存为KML
         gdf.to_file(output_path, driver="KML")
 
-        return self.result(output_path, feature_count, attribute_count)
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
 
-    @staticmethod
-    def result(output_path: str, feature_count: int, attribute_count: int) -> str:
+        return output_path, feature_count, attribute_count
+
+    def result(self) -> str:
         return (
-            f"KML文件已保存至: {output_path}\n"
-            f"要素数量: {feature_count}\n"
-            f"属性字段数量: {attribute_count}"
+            f"KML文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}"
         )
 
 
 class GdfToGeoTIFFConverter(BaseGdfConverter):
     """将GeoDataFrame转换为GeoTIFF"""
 
-    def convert(self) -> str:
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None,
+                 **kwargs):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute = None
+        self.output_path = None
+        self.resolution = None
+
+    def convert(self):
         """执行GeoTIFF转换"""
         # 获取参数
         resolution = self.kwargs.get('resolution', 10)  # 默认分辨率10米/像素
@@ -304,20 +373,23 @@ class GdfToGeoTIFFConverter(BaseGdfConverter):
         ) as dst:
             dst.write(raster, 1)
 
-        return self.result(output_path, resolution, attribute)
+        self.output_path = output_path
+        self.resolution = resolution
+        self.attribute = attribute
 
-    @staticmethod
-    def result(output_path: str, resolution: float, attribute: Optional[str]) -> str:
-        if attribute:
+        return output_path, resolution, attribute
+
+    def result(self) -> str:
+        if self.attribute:
             return (
-                f"GeoTIFF文件已保存至: {output_path}\n"
-                f"分辨率: {resolution} 米/像素\n"
-                f"栅格化属性: {attribute}"
+                f"GeoTIFF文件已保存至: {self.output_path}\n"
+                f"分辨率: {self.resolution} 米/像素\n"
+                f"栅格化属性: {self.attribute}"
             )
         else:
             return (
-                f"GeoTIFF文件已保存至: {output_path}\n"
-                f"分辨率: {resolution} 米/像素\n"
+                f"GeoTIFF文件已保存至: {self.output_path}\n"
+                f"分辨率: {self.resolution} 米/像素\n"
                 f"栅格化类型: 二进制（存在/不存在）"
             )
 
@@ -325,7 +397,17 @@ class GdfToGeoTIFFConverter(BaseGdfConverter):
 class GdfToPNGConverter(BaseGdfConverter):
     """将GeoDataFrame转换为PNG图像"""
 
-    def convert(self) -> str:
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None,
+                 **kwargs):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.png_path = None
+        self.bbox = None
+
+    def convert(self):
         """执行PNG转换"""
         # 获取地理范围
         bbox = self.get_bbox()
@@ -359,7 +441,10 @@ class GdfToPNGConverter(BaseGdfConverter):
         plt.savefig(png_path, dpi=600, bbox_inches='tight')
         plt.close(fig)
 
-        return self.result(png_path, bbox)
+        self.png_path = png_path
+        self.bbox = bbox
+
+        return png_path, bbox
 
     def _plot_with_attributes(self, ax):
         """根据属性值绘制不同颜色"""
@@ -398,13 +483,12 @@ class GdfToPNGConverter(BaseGdfConverter):
                         edgecolor='none'  # 可选：移除边界线
                     )
 
-    @staticmethod
-    def result(png_path, bbox):
+    def result(self):
         # 解构边界框坐标
-        minx, miny, maxx, maxy = bbox
+        minx, miny, maxx, maxy = self.bbox
 
         return (
-            f"PNG文件已保存至: {png_path}\n"
+            f"PNG文件已保存至: {self.png_path}\n"
             f"边界框范围: ({minx}, {miny}) 与 ({maxx}, {maxy})之间"
         )
 

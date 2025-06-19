@@ -10,6 +10,7 @@ from typing import Dict, Any, Union
 import geopandas as gpd
 
 from GeoFile.Common.Message import success
+from GeoFile.Tools.ClusterAnalysisTool import ClusterFactory, ClusterResultProcessor
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from GeoFile.Tools.SpatialQueryTool import spatial_query_tool
 
@@ -67,11 +68,53 @@ class SpatialQueryProcessor(BaseOperationProcessor):
         return result
 
 
+class ClusterAnalysisProcessor(BaseOperationProcessor):
+    """空间聚类分析处理器"""
+
+    SUPPORTED_OPERATION = ['cluster_analysis']
+
+    def core(self):
+        gdf = self.gdf
+        algorithm = self.params.get('algorithm')
+        use_attributes = self.params.get("attributes", [])
+        n_clusters = self.params.get('n_clusters', None)
+        eps = self.params.get('eps', None)
+
+        # 准备算法特定参数
+        algorithm_params = {}
+        if n_clusters is not None:
+            algorithm_params['n_clusters'] = n_clusters
+        if eps is not None:
+            algorithm_params['eps'] = eps
+
+        # 使用工厂创建聚类器
+        cluster = ClusterFactory.get_cluster(
+            algorithm=algorithm,
+            gdf=gdf,
+            use_attributes=use_attributes,
+            **algorithm_params  # 只传递算法特定参数
+        )
+
+        # 执行聚类
+        clustered_gdf = cluster.fit_predict()
+        cluster_stats = cluster.get_cluster_stats()
+
+        # 添加算法参数到统计信息
+        cluster_stats['params'] = algorithm_params
+
+        # 处理结果并生成输出
+        processor = ClusterResultProcessor(clustered_gdf, cluster_stats)
+        results = processor.generate_outputs()
+
+        return results.get("stats")
+
+
 class SpatialProcessorFactory:
     """文件操作器工厂"""
 
     OPERATION_PROCESSORS = {
-        'spatial_query': SpatialQueryProcessor
+        'spatial_query': SpatialQueryProcessor,
+        'cluster_analysis': ClusterAnalysisProcessor
     }
 
     @classmethod

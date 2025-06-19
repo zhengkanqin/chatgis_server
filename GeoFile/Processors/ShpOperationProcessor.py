@@ -57,7 +57,9 @@ class ConvertProcessor(BaseOperationProcessor):
             custom_output_path=self.params.get('output_path')
         )
 
-        return converter.convert()
+        converter.convert()
+
+        return converter.result()
 
 
 class QueryProcessor(BaseOperationProcessor):
