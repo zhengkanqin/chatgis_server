@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from langchain.tools import tool
@@ -105,8 +106,8 @@ class GISPlan:
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
                 md += f"- 👤 委托者: {task.sender}\n"
-                md += f"- 💬 反馈: {task.feedback}\n\n"
-                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n"
+                md += f"- 💬 反馈: {task.feedback}\n"
+                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n\n"
         md +=res_md
         return md
 
@@ -118,8 +119,8 @@ class GISPlan:
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
                 md += f"- 👤 委托者: {task.sender}\n"
-                md += f"- 💬 反馈: {task.feedback}\n\n"
-                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n"
+                md += f"- 💬 反馈: {task.feedback}\n"
+                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n\n"
             return md
 
 
@@ -130,9 +131,7 @@ System_plan = GISPlan()
 def DoAddSubtask(description:str, resource:str, sender:str):
     """
     添加一条子任务到任务系统
-
     description(str): 任务描述
-    resource(str): 任务相关文件、资源、信息、图层名
     sender(str): 委托者名称
     """
     response = System_plan.AddSubTask_(GISTask(description, False,  sender,""))
@@ -199,9 +198,10 @@ def FinishCurrentSubtask(resource: str = "", feedback: str = ""):
                 System_plan.Resource.append(resource)
             if feedback:
                 task.feedback = feedback
-    UpdatePlanToUI()
-    SetUpdateTask()
-    return "[$end][$end]"
+            UpdatePlanToUI()
+            SetUpdateTask()
+            return "[$end][$end]"
+    return "无可完成任务，提交失败！"
 
 
 @tool
@@ -214,9 +214,10 @@ def FailCurrentSubtask(feedback: str = "任务失败"):
     for task in System_plan.SubTask:
         if not task.state:
             task.feedback = feedback
-    UpdatePlanToUI()
-    SetUpdateTask()
-    return "[$fail][$fail]"
+            UpdatePlanToUI()
+            SetUpdateTask()
+            return "[$fail][$fail]"
+    return "无可失败任务，提交失败！"
 
 
 def AreAllTasksFinished() -> bool:
@@ -261,11 +262,11 @@ def GetALlSubTaskBySystem():
     return System_plan.GetAllSubtask_()
 
 def AddPlanSource(resource:str):
-    System_plan.Resource.extend(resource)
+    System_plan.Resource.append(resource)
 
-async def UpdatePlanToUI():
+def UpdatePlanToUI():
     ToUI = {
         "type":"plan",
         "data":GetALlSubTaskBySystem()
     }
-    manager.send_message(json.dumps(ToUI))
+    asyncio.run(manager.send_message(json.dumps(ToUI)))
