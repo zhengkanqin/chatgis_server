@@ -1,6 +1,6 @@
-# GeoFile/Processors/ShpOperationProcessor.py
+# GeoFile/Processors/VectorOperationProcessor.py
 """
-SHP文件操作处理模块
+矢量数据操作处理模块
 
 支持基础地理信息分析、几何类型统计、坐标范围提取等功能。
 """
@@ -44,7 +44,7 @@ class BaseOperationProcessor(ABC):
 
 
 class ConvertProcessor(BaseOperationProcessor):
-    """Shp2Type转换器"""
+    """Gdf2Type转换器"""
 
     SUPPORTED_OPERATION = ['convert']
 
@@ -138,7 +138,7 @@ class BufferQueryProcessor(BaseOperationProcessor):
         return result
 
 
-class ShpProcessorFactory:
+class VectorProcessorFactory:
     """文件操作器工厂"""
 
     OPERATION_PROCESSORS = {
