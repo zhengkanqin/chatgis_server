@@ -106,8 +106,8 @@ class GISPlan:
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
                 md += f"- 👤 委托者: {task.sender}\n"
-                md += f"- 💬 反馈: {task.feedback}\n\n"
-                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n"
+                md += f"- 💬 反馈: {task.feedback}\n"
+                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n\n"
         md +=res_md
         return md
 
@@ -119,8 +119,8 @@ class GISPlan:
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
                 md += f"- 👤 委托者: {task.sender}\n"
-                md += f"- 💬 反馈: {task.feedback}\n\n"
-                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n"
+                md += f"- 💬 反馈: {task.feedback}\n"
+                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n\n"
             return md
 
 
