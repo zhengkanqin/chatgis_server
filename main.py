@@ -17,7 +17,7 @@ from typing import Optional, Dict, Any, List, Union
 import base64
 import time
 from Agent.FileReadAgent import read_file
-
+from Agent.Globals import system_threads_id, Change_system_threads
 
 app = FastAPI()
 
@@ -232,8 +232,12 @@ async def query_knowledge(request: KnowledgeQueryRequest):
 
 
 
-import pyogrio
-
+@app.get("/new_threads")
+async def new_threads_get():
+    await Change_system_threads()
+    return {
+        "status": "success"
+    }
 
 
 

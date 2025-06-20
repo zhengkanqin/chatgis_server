@@ -11,7 +11,7 @@ from Agent.Globals import UserLayers
 from Agent.GeoAgent import GeoTestAgent
 from Agent.MultiAgent import MultiAgent
 from AgentTools.GISPlan import AddPlanSource
-
+from Globals import system_threads_id
 # 模块级变量，用于存储中断状态
 is_interrupted = False
 interrupt_query = ""
@@ -187,7 +187,7 @@ async def event_generator(q: str, files: Optional[List[str]] = None,
 
         async with contextlib.aclosing(workAgent.astream(
             input=input_data,
-            config={"configurable": {"thread_id": 42}},
+            config={"configurable": {"thread_id": system_threads_id}},
             stream_mode="updates"
         )) as astream:
             async for update in astream:
