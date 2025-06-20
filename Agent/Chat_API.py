@@ -70,7 +70,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
                             response = {
                                 "type": "tool_start",
                                 "content": f"正在执行{tool_call['name']}...",
-                                "sender": node_name
+                                "sender": tool_call['name']
                             }
 
                             yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"
@@ -105,7 +105,7 @@ async def process_messages(update: dict) -> AsyncGenerator[str, None]:
                             response = {
                                 "type": "tool_start",
                                 "content": f"正在执行{tool_call['name']}...",
-                                "sender": node_name
+                                "sender": tool_call['name']
                             }
 
                             yield f"data: {json.dumps(response, ensure_ascii=False)}\n\n"

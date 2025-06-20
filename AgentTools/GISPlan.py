@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from langchain.tools import tool
@@ -199,9 +200,10 @@ def FinishCurrentSubtask(resource: str = "", feedback: str = ""):
                 System_plan.Resource.append(resource)
             if feedback:
                 task.feedback = feedback
-    UpdatePlanToUI()
-    SetUpdateTask()
-    return "[$end][$end]"
+            UpdatePlanToUI()
+            SetUpdateTask()
+            return "[$end][$end]"
+    return "无可完成任务，提交失败！"
 
 
 @tool
@@ -214,9 +216,10 @@ def FailCurrentSubtask(feedback: str = "任务失败"):
     for task in System_plan.SubTask:
         if not task.state:
             task.feedback = feedback
-    UpdatePlanToUI()
-    SetUpdateTask()
-    return "[$fail][$fail]"
+            UpdatePlanToUI()
+            SetUpdateTask()
+            return "[$fail][$fail]"
+    return "无可失败任务，提交失败！"
 
 
 def AreAllTasksFinished() -> bool:
@@ -263,9 +266,9 @@ def GetALlSubTaskBySystem():
 def AddPlanSource(resource:str):
     System_plan.Resource.extend(resource)
 
-async def UpdatePlanToUI():
+def UpdatePlanToUI():
     ToUI = {
         "type":"plan",
         "data":GetALlSubTaskBySystem()
     }
-    manager.send_message(json.dumps(ToUI))
+    asyncio.run(manager.send_message(json.dumps(ToUI)))
