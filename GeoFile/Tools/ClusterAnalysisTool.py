@@ -1,6 +1,5 @@
 # GeoFile/Tools/ClusterAnalysisTool.py
 import os
-import tempfile
 from datetime import datetime
 from typing import List, Optional, Dict, Type
 
@@ -253,21 +252,22 @@ class ClusterResultProcessor:
         """生成所有输出结果"""
         # 创建目录存储输出文件
         output_dir = os.path.abspath(f"GeoFile/Result/_cluster_result")
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        geojson_path = f"clusters_{timestamp}.geojson"
-        # shp_path = f"clusters_{timestamp}.shp"
 
         # 准备输出目录
         os.makedirs(output_dir, exist_ok=True)
 
         # 生成GeoJSON
-        self._generate_geojson(geojson_path)
+        geojson_path = self._generate_geojson(output_dir)
+
+        # 生成Shapefile
+        shp_path = self._generate_shapefile(output_dir)
 
         # 生成统计信息字符串，包含文件路径
-        stats_str = self._generate_stats_string(geojson_path)
+        stats_str = self._generate_stats_string(geojson_path, shp_path)
 
         return {
             "geojson_path": geojson_path,
+            "shp_path": shp_path,
             "stats": stats_str,
             "cluster_stats": self.cluster_stats
         }
@@ -280,7 +280,9 @@ class ClusterResultProcessor:
             gdf=self.clustered_gdf,
             custom_output_path=output_path
         )
-        converter.convert()
+        geojson_path, _, _ = converter.convert()
+
+        return geojson_path
 
     def _generate_shapefile(self, output_path: str):
         """生成Shapefile文件"""
@@ -290,9 +292,11 @@ class ClusterResultProcessor:
             gdf=self.clustered_gdf,
             custom_output_path=output_path
         )
-        converter.convert()
+        shp_path, _, _, _ = converter.convert()
 
-    def _generate_stats_string(self, geojson_path: str) -> str:
+        return shp_path
+
+    def _generate_stats_string(self, geojson_path: str, shp_path: str) -> str:
         """生成包含文件路径和聚类统计信息的字符串"""
         stats = self.cluster_stats
         algorithm_name = stats["algorithm"].upper()
@@ -300,6 +304,7 @@ class ClusterResultProcessor:
         # 文件路径信息
         result = f"聚类结果文件已生成：\n"
         result += f"  - GeoJSON: {geojson_path}\n"
+        result += f"  - Shapefile: {shp_path}\n"
 
         # 聚类算法信息
         result += f"聚类算法: {algorithm_name}\n"
@@ -314,7 +319,7 @@ class ClusterResultProcessor:
         for cluster_id, size in stats["cluster_sizes"].items():
             result += f"  簇 {cluster_id}: {size} 个要素\n"
 
-        # 轮廓系数（如果计算了）
+        # 轮廓系数
         if 'silhouette_score' in stats:
             score = stats['silhouette_score']
             result += f"\n轮廓系数: {score:.3f}\n"
