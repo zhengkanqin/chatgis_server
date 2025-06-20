@@ -1,4 +1,6 @@
 from typing import AsyncGenerator, List, Optional
+
+from jedi.inference.recursion import recursion_limit
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langgraph.types import Command
 import contextlib
@@ -7,11 +9,11 @@ from Agent.Agent_Main import Agent_Main, workflow
 import json
 import base64
 import requests
-from Agent.Globals import UserLayers
+from Agent.Globals import UserLayers, Get_threads
 from Agent.GeoAgent import GeoTestAgent
 from Agent.MultiAgent import MultiAgent
 from AgentTools.GISPlan import AddPlanSource
-from Globals import system_threads_id
+from Agent.Globals import system_threads_id
 # 模块级变量，用于存储中断状态
 is_interrupted = False
 interrupt_query = ""
@@ -164,7 +166,6 @@ async def event_generator(q: str, files: Optional[List[str]] = None,
             UserLayers.extend(layers)
             short_layers, long_layers = [], []
             for layer in layers:
-                AddPlanSource(f"图层：{layer["name"]}")
                 if len(json.dumps(layer)) < 1000:
                     short_layers.append(layer)
                 else:
@@ -177,6 +178,8 @@ async def event_generator(q: str, files: Optional[List[str]] = None,
                 f"图层名：{l['name']}，图层类型：{l['type']}，图层数据：数据过大，不显示。"
                 for l in long_layers
             ]
+            for SourceLayer in layer_msgs:
+                AddPlanSource(SourceLayer)   #------------------系统-------------------------
             final_layer_message = HumanMessage(content="用户指定了以下图层请求对话：\n" + "\n".join(layer_msgs))
             messages = [final_layer_message] + messages
 
@@ -186,8 +189,12 @@ async def event_generator(q: str, files: Optional[List[str]] = None,
             input_data = Command(resume=input_data)
 
         async with contextlib.aclosing(workAgent.astream(
+
             input=input_data,
-            config={"configurable": {"thread_id": system_threads_id}},
+            config={
+                "configurable": {"thread_id": Get_threads()},
+                "recursion_limit": 100
+                    },
             stream_mode="updates"
         )) as astream:
             async for update in astream:

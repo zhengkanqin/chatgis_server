@@ -2,11 +2,11 @@
 import json
 import re
 from Agent.MultiAgent_Prompt import prompt_chat_start, prompt_plan, prompt_maps, prompt_analysis, prompt_searches, \
-    prompt_reflection, prompt_thinking
+    prompt_reflection, prompt_thinking, prompt_live
 from AgentTools.GISPlan import DoAddSubtask, DoDeleteSubtask, GetAllSubtaskInfo, ReviseSubtask, FinishCurrentSubtask, \
     FailCurrentSubtask, SetTotalThinking, SetUserGoal, AreAllTasksFinished, GetCurrentSender, GetCurrentSubTask, \
     GetUpdateTask, GetALlSubTaskBySystem, SetUpdateTask
-from AgentTools.baidumaptools import map_directions, map_reverse_geocode
+from AgentTools.baidumaptools import map_directions, map_reverse_geocode, map_geocode
 from GeoFile.Service.ToolService import read_file, geo_data_convert, attribute_query, buffer_query, buffer_create,spatial_query
 from AgentTools.RAG import Query_GeoFile, Query_Knowledge
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
@@ -56,7 +56,8 @@ live_tools = [
     FinishCurrentSubtask,
     FailCurrentSubtask,
     map_directions,
-    map_reverse_geocode
+    map_reverse_geocode,
+    map_geocode
 ]
 live_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(live_tools)
 #------------------------------------------------------------
@@ -131,7 +132,7 @@ def search_operation(state:GIS_State):
 def live_operation(state:GIS_State):
     messages = state["temp_messages"]
     messages = [m for m in state["temp_messages"] if not isinstance(m, SystemMessage)]
-    messages.insert(0, SystemMessage(content=prompt_searches))
+    messages.insert(0, SystemMessage(content=prompt_live))
     response = live_llm.invoke(messages)
     if response.content == messages[-1].content:
         return {"temp_messages": [HumanMessage(content="多次输出相同内容，请调用失败提交工具提交异常！")]}  # 防止陷入死循环

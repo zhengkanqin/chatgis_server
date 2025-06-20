@@ -11,7 +11,7 @@ BASE_URL = "https://api.map.baidu.com"
 
 @tool
 def map_geocode(address: str) -> dict:
-    """根据地址返回经纬度坐标"""
+    """查询地名对应的经纬度坐标，和map_reverse_geocode相对应"""
     resp = httpx.get(f"{BASE_URL}/geocoding/v3/", params={
         "address": address,
         "output": "json",
@@ -22,7 +22,7 @@ def map_geocode(address: str) -> dict:
 
 @tool
 def map_reverse_geocode(lat: float, lng: float) -> dict:
-    """根据经纬度返回详细地址信息"""
+    """查询经纬度对应的地址信息，和map_geocode相对应"""
     resp = httpx.get(f"{BASE_URL}/reverse_geocoding/v3/", params={
         "location": f"{lat},{lng}",
         "output": "json",

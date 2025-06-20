@@ -131,9 +131,7 @@ System_plan = GISPlan()
 def DoAddSubtask(description:str, resource:str, sender:str):
     """
     添加一条子任务到任务系统
-
     description(str): 任务描述
-    resource(str): 任务相关文件、资源、信息、图层名
     sender(str): 委托者名称
     """
     response = System_plan.AddSubTask_(GISTask(description, False,  sender,""))
@@ -264,7 +262,7 @@ def GetALlSubTaskBySystem():
     return System_plan.GetAllSubtask_()
 
 def AddPlanSource(resource:str):
-    System_plan.Resource.extend(resource)
+    System_plan.Resource.append(resource)
 
 def UpdatePlanToUI():
     ToUI = {
