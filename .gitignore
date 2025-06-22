@@ -1,8 +1,6 @@
 dist
 build
 /.idea
-/config.json
 config.json
-*.json
 GeoFile
 

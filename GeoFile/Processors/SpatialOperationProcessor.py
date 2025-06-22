@@ -109,12 +109,41 @@ class ClusterAnalysisProcessor(BaseOperationProcessor):
         return results.get("stats")
 
 
+class ElementOverlayProcessor(BaseOperationProcessor):
+    """要素叠加分析处理器"""
+
+    SUPPORTED_OPERATION = ['element_overlay']
+
+    def core(self):
+        gdf = self.gdf
+        operation = self.params.get('operation')
+        overlay_source = self.params.get('overlay_source')
+        overlay_gdf = read_geographic_data(overlay_source)
+        join_attribute = self.params.get('join_attribute')
+        tolerance = self.params.get("tolerance", None)
+
+        # 准备算法特定参数
+        overlay_params = {'join_attribute': join_attribute}
+        if tolerance is not None:
+            overlay_params['tolerance'] = tolerance
+
+        result = ElementOverlayFactory.get_element_overlay(
+            operation=operation,
+            main_gdf=gdf,
+            overlay_gdf=overlay_gdf,
+            **overlay_params
+        )
+
+        return result
+
+
 class SpatialProcessorFactory:
     """文件操作器工厂"""
 
     OPERATION_PROCESSORS = {
         'spatial_query': SpatialQueryProcessor,
-        'cluster_analysis': ClusterAnalysisProcessor
+        'cluster_analysis': ClusterAnalysisProcessor,
+        'element_overlay': ElementOverlayProcessor
     }
 
     @classmethod

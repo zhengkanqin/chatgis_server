@@ -6,12 +6,14 @@ from langchain_core.tools import tool
 from GeoFile.Common.ErrorsHandler import UnifiedErrorFactory
 from GeoFile.Common.Message import error
 from GeoFile.Processors.DataInputProcessor import FileProcessorFactory
-from GeoFile.Processors.ShpOperationProcessor import ShpProcessorFactory
+from GeoFile.Processors.VectorOperationProcessor import VectorProcessorFactory
 from GeoFile.Processors.SpatialOperationProcessor import SpatialProcessorFactory
 
 
 @tool()
-async def read_file(file_path: str):
+async def read_file(
+        file_path: str
+):
     """
     读取并解析地理数据文件，提取关键特征信息，支持Shp/GeoJSON/Excel/Csv/Txt等多种矢量形式
 
@@ -70,15 +72,16 @@ async def read_file(file_path: str):
 # "buffer_distance", "buffer_color", "output_path"]} else: # 无效操作类型 return { "status": "error", "message":
 # f"不支持的操作类型: {operation}" }
 #
-#     return await ShpProcessorFactory.create_processor(file_path, operation, filtered_params)
+#     return await VectorProcessorFactory.create_processor(file_path, operation, filtered_params)
 
 
 @tool()
-async def geo_data_convert(source: Union[str, Dict],
-                           type_name: str,
-                           attributes: Optional[List[str]] = None,
-                           output_path: Optional[str] = None
-                           ):
+async def geo_data_convert(
+        source: Union[str, Dict],
+        type_name: str,
+        attributes: Optional[List[str]] = None,
+        output_path: Optional[str] = None
+):
     """
     将各种矢量地理数据转换为其他格式，支持GeoJSON/PNG等格式，可选择保留指定属性字段
 
@@ -107,7 +110,7 @@ async def geo_data_convert(source: Union[str, Dict],
         params.update({"output_path": output_path})
 
     try:
-        return ShpProcessorFactory.create_processor(source, "convert", params)
+        return VectorProcessorFactory.create_processor(source, "convert", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("数据格式转换工具", error_obj=e)
         response = handler.format_response()
@@ -115,11 +118,12 @@ async def geo_data_convert(source: Union[str, Dict],
 
 
 @tool()
-async def attribute_query(file_path: str,
-                          query_target: str,
-                          target_ids: Optional[List[int]] = None,
-                          attributes: Optional[List[str]] = None
-                          ):
+async def attribute_query(
+        file_path: str,
+        query_target: str,
+        target_ids: Optional[List[int]] = None,
+        attributes: Optional[List[str]] = None
+):
     """
     灵活查询SHP文件属性数据：
        - 要素字段查询(单个或多个要素字段): query_target = 'single', target_ids = [要素ID], attributes= ['字段名']
@@ -141,7 +145,7 @@ async def attribute_query(file_path: str,
         params.update({"target_ids": target_ids})
 
     try:
-        return ShpProcessorFactory.create_processor(file_path, "query", params)
+        return VectorProcessorFactory.create_processor(file_path, "query", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("属性查询工具", error_obj=e)
         response = handler.format_response()
@@ -149,12 +153,13 @@ async def attribute_query(file_path: str,
 
 
 @tool()
-async def buffer_create(file_path: str,
-                        buffer_create_ids: List[int],
-                        buffer_distance: float,
-                        buffer_color: Optional[str] = "#66CCFF",
-                        output_path: Optional[str] = None
-                        ):
+async def buffer_create(
+        file_path: str,
+        buffer_create_ids: List[int],
+        buffer_distance: float,
+        buffer_color: Optional[str] = "#66CCFF",
+        output_path: Optional[str] = None
+):
     """
     为指定要素创建缓冲区
 
@@ -172,7 +177,7 @@ async def buffer_create(file_path: str,
         params.update({"output_path": output_path})
 
     try:
-        return ShpProcessorFactory.create_processor(file_path, "buffer", params)
+        return VectorProcessorFactory.create_processor(file_path, "buffer", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("缓冲区创建工具", error_obj=e)
         response = handler.format_response()
@@ -180,14 +185,15 @@ async def buffer_create(file_path: str,
 
 
 @tool()
-async def buffer_query(file_path: str,
-                       buffer_create_ids: List[int],
-                       query_file_path: str,
-                       target_ids: List[int],
-                       buffer_distance: float,
-                       buffer_color: Optional[str] = "#66CCFF",
-                       output_path: Optional[str] = None
-                       ):
+async def buffer_query(
+        file_path: str,
+        buffer_create_ids: List[int],
+        query_file_path: str,
+        target_ids: List[int],
+        buffer_distance: float,
+        buffer_color: Optional[str] = "#66CCFF",
+        output_path: Optional[str] = None
+):
     """
     以指定要素创建缓冲区，并查询另一些要素是否处在缓冲区内
 
@@ -209,7 +215,7 @@ async def buffer_query(file_path: str,
         params.update({"output_path": output_path})
 
     try:
-        return ShpProcessorFactory.create_processor(file_path, "buffer_query", params)
+        return VectorProcessorFactory.create_processor(file_path, "buffer_query", params)
     except Exception as e:
         handler = UnifiedErrorFactory.get_handler("缓冲区查询工具", error_obj=e)
         response = handler.format_response()
@@ -217,10 +223,70 @@ async def buffer_query(file_path: str,
 
 
 @tool()
-async def spatial_query(source: Union[str, Dict],
-                        query_source: Union[str, Dict],
-                        queried_condition: Optional[Union[str, Dict[str, Any]]] = None,
-                        relation: Optional[str] = "intersects"):
+async def element_overlay_analysis(
+        operation: str,
+        main_source: Union[str, Dict],
+        overlay_source: Union[str, Dict],
+        join_attribute: Optional[str] = "ALL",
+        tolerance: Optional[float] = None
+):
+    """
+        执行要素叠加分析：根据指定操作类型计算输入要素和标识要素的几何交集。与标识要素重叠的输入要素或输入要素的一部分将获得这些标识要素的属性。
+
+        参数:
+        - operation: 叠加分析操作类型，支持以下类型:
+            * 支持参数:
+                "identity" - 标识
+                "erase" - 擦除
+                "update" - 更新
+                "symdifference" - 交集取反
+                "spatial_join" - 空间连接
+                "union" - 联合
+                "intersect" - 相交
+
+        - main_source: 进行叠加分析的输入数据源，支持以下格式：
+            * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+            * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
+            * 图层引用(str): "[$layer]精确图层名[$layer]"
+
+        - overlay_source: 用于各种操作的要素数据源。必须是面或与输入要素具有相同几何类型的要素。支持以下格式：
+            * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+            * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
+            * 图层引用(str): "[$layer]精确图层名[$layer]"
+
+        - join_attribute: 确定哪些属性将传递到输出要素类中。(可选，默认为"ALL")
+            * 主要影响以下操作: "identity", "symdifference", "union", "intersect"，其他操作中可能被忽略
+            * 支持参数:
+                "ALL" - 输入要素与标识要素的所有属性（包括 FID）都将传递到输出要素。如果未找到任何交集，则标识要素值不会传递到输出（其值将设置为空字符串或 0）并且标识要素 FID 将为 -1。这是默认设置。
+                "NO_FID" - 输入要素和标识要素中，除 FID 以外的所有属性都将传递到输出要素。如果未找到任何交集，则标识要素值不会传递到输出（其值将设置为空字符串或 0）。
+                "ONLY_FID" - 输入要素的所有属性以及标识要素的 FID 属性将传递到输出要素。如果未找到任何交集，则输出中的标识要素 FID 属性值将为 -1。
+
+        - tolerance: 所有要素坐标（节点和折点）之间的最小距离以及坐标可以沿 X 和/或 Y 方向移动的距离。(可选)
+            * 单位与数据源坐标系一致（投影坐标系为米，地理坐标系为度）
+            * 默认值使用系统默认容差（通常0.001米或0.00001度）
+        """
+    params = {}
+    params.update({"operation": operation})
+    params.update({"overlay_source": overlay_source})
+    params.update({"join_attribute": join_attribute})
+    if tolerance:
+        params.update({"tolerance": tolerance})
+
+    try:
+        return SpatialProcessorFactory.create_processor("element_overlay_analysis", main_source, params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("要素叠加分析工具", error_obj=e)
+        response = handler.format_response()
+        return error(response)
+
+
+@tool()
+async def spatial_query(
+        source: Union[str, Dict],
+        query_source: Union[str, Dict],
+        queried_condition: Optional[Union[str, Dict[str, Any]]] = None,
+        relation: Optional[str] = "intersects"
+):
     """
     执行空间查询：检查源要素是否与查询空间对象存在空间关系
 
@@ -321,4 +387,12 @@ async def cluster_analysis(
         return error(response)
 
 
-AnalysisTools = [read_file, geo_data_convert, attribute_query, buffer_query, spatial_query, cluster_analysis]
+AnalysisTools = [
+    read_file,
+    geo_data_convert,
+    attribute_query,
+    buffer_query,
+    element_overlay_analysis,
+    spatial_query,
+    cluster_analysis
+]
