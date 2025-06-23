@@ -3,8 +3,6 @@ from typing import List
 
 import geopandas as gpd
 
-from GeoFile.Tools.TableExportTool import TableExporterFactory
-
 
 class QueryProcessor:
     """属性查询处理器，支持多种查询模式并返回表格格式字符串"""
@@ -74,7 +72,7 @@ class QueryProcessor:
         subset = gdf.iloc[target_ids][attributes]
 
         # 转换为表格字符串
-        return TableExporterFactory.export(subset, title="独立查询结果")
+        return subset
 
     @staticmethod
     def _row_query(gdf: gpd.GeoDataFrame, target_ids: List[int]) -> str:
@@ -102,7 +100,7 @@ class QueryProcessor:
         subset = gdf.iloc[target_ids][attribute_columns]
 
         # 转换为表格字符串
-        return TableExporterFactory.export(subset, title="横向查询结果")
+        return subset
 
     @staticmethod
     def _column_query(gdf: gpd.GeoDataFrame, attributes: List[str]) -> str:
@@ -129,7 +127,7 @@ class QueryProcessor:
         subset = gdf[attributes]
 
         # 转换为表格字符串
-        return TableExporterFactory.export(subset, title="纵向查询结果")
+        return subset
 
     @staticmethod
     def _all_query(gdf: gpd.GeoDataFrame) -> str:
@@ -147,7 +145,7 @@ class QueryProcessor:
         subset = gdf[attribute_columns]
 
         # 转换为表格字符串
-        return TableExporterFactory.export(subset, title="全表查询结果")
+        return subset
 
 
 def query_tool(gdf, query_target, target_ids, attributes):

@@ -4,8 +4,6 @@ from typing import List
 import geopandas as gpd
 from pyproj import CRS
 
-from GeoFile.Tools.TableExportTool import TableExporterFactory
-
 
 def _get_utm_crs(lon: float, lat: float) -> CRS:
     """
@@ -104,4 +102,4 @@ def buffer_query_tool(gdf_buffer: gpd.GeoDataFrame,
     # 检查目标要素是否在缓冲区内
     target_features['in_buffer'] = target_features.geometry.intersects(buffer_geom)
 
-    return TableExporterFactory.export(target_features, title="缓冲区查询结果")
+    return target_features

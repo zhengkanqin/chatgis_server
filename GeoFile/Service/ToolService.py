@@ -98,6 +98,10 @@ async def geo_data_convert(
         'gpkg': GeoPackage格式
         'kml': KML格式
         'geotiff': GeoTIFF文件
+        'excel': Excel文件
+        'csv': Csv文件
+        'txt': Txt文件
+        'str': String字符串表达的表格
     - attributes: 需要处理的属性字段列表(空列表表示全部属性):
         type_name = 'geojson', 'shp', 'gpkg', 'kml': attributes表示转换时需要保留的属性字段
         type_name = "png": attributes表示转换时用以着色的数值或分类字段(空列表表示使用同一颜色)

@@ -1,17 +1,14 @@
 # GeoFile/Tools/BufferTool.py
 import os
-from datetime import datetime
 from typing import List, Optional
 
 import geopandas as gpd
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon as MplPolygon
 from pyproj import CRS
 
-from GeoFile.Tools.GeographicObjectTool import read_geographic_data
+from GeoFile.Tools.Gdf2TypeTool import ConverterFactory
 
 # 确保使用Agg后端，避免GUI依赖
 matplotlib.use('Agg')
@@ -76,11 +73,6 @@ def buffer_tool(
     # 创建缓冲区GeoDataFrame
     buffer_gdf = gpd.GeoDataFrame(geometry=[buffer_geom], crs=gdf.crs)
 
-    # 9. 计算边界框 (左上右下)
-    minx, miny, maxx, maxy = buffer_geom.bounds
-    bbox = [minx, miny, maxx, maxy]
-
-    # 10. 保存SHP文件 (如果指定了输出路径)
     # 处理输出路径
     if custom_output_path:
         # 使用自定义的完整输出路径
@@ -90,89 +82,35 @@ def buffer_tool(
             os.makedirs(output_dir, exist_ok=True)
     else:
         # 创建默认结果目录
-        output_dir = os.path.abspath("GeoFile/Result")
+        output_dir = os.path.abspath("GeoFile/Result/_buffer_result")
         os.makedirs(output_dir, exist_ok=True)
 
-    # 生成唯一的输出文件名
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = os.path.splitext(os.path.basename(file_path))[0]
-
     # 保存GeoJSON文件
-    geojson_path = os.path.join(output_dir, f"{base_name}_buffer_{timestamp}.geojson")
-    buffer_gdf.to_file(geojson_path, driver="GeoJSON")
-    geojson_saved_path = os.path.abspath(geojson_path)
+    converter = ConverterFactory.get_converter(
+        type_name='geojson',
+        gdf=buffer_gdf,
+        custom_output_path=output_dir
+    )
+    geojson_saved_path, _, _ = converter.convert()
 
     # 保存SHP文件
-    shp_path = os.path.join(output_dir, f"{base_name}_buffer_{timestamp}.shp")
-    buffer_gdf.to_file(shp_path, driver="ESRI Shapefile")
-    shp_saved_path = os.path.abspath(shp_path)
+    converter = ConverterFactory.get_converter(
+        type_name='shp',
+        gdf=buffer_gdf,
+        custom_output_path=output_dir
+    )
+    shp_saved_path, _, _, _ = converter.convert()
 
     # 生成PNG图片
-    png_path = os.path.join(output_dir, f"{base_name}_buffer_{timestamp}.png")
-    create_buffer_png(buffer_geom, buffer_color, png_path)
-    png_saved_path = os.path.abspath(png_path)
+    converter = ConverterFactory.get_converter(
+        type_name='png',
+        gdf=buffer_gdf,
+        custom_output_path=output_dir
+    )
+    png_saved_path, bbox = converter.convert()
 
     # 11. 返回结果
     return geojson_saved_path, png_saved_path, shp_saved_path, bbox
-
-
-def create_buffer_png(buffer_geom, buffer_color: str, output_path: str) -> None:
-    """
-    创建缓冲区PNG图片
-
-    参数:
-    - buffer_geom: 缓冲区的几何对象
-    - buffer_color: 缓冲区填充颜色（十六进制格式）
-    - output_path: 输出PNG文件路径
-    """
-    # 创建图形和坐标轴
-    fig, ax = plt.subplots(figsize=(10, 10))
-
-    # 设置透明背景
-    fig.patch.set_alpha(0.0)
-    ax.set_axis_off()
-
-    # 获取几何边界
-    minx, miny, maxx, maxy = buffer_geom.bounds
-    width = maxx - minx
-    height = maxy - miny
-
-    # 设置坐标轴范围（添加5%的边距）
-    margin = max(width, height) * 0.05
-    ax.set_xlim(minx - margin, maxx + margin)
-    ax.set_ylim(miny - margin, maxy + margin)
-
-    # 确保等比例缩放
-    ax.set_aspect('equal')
-
-    # 创建补丁列表
-    patches = []
-
-    # 处理不同几何类型
-    if buffer_geom.geom_type == 'Polygon':
-        # 单个多边形
-        patches.append(create_polygon_patch(buffer_geom, buffer_color))
-    elif buffer_geom.geom_type == 'MultiPolygon':
-        # 多个多边形
-        for polygon in buffer_geom.geoms:
-            patches.append(create_polygon_patch(polygon, buffer_color))
-
-    # 添加所有补丁到坐标轴
-    collection = PatchCollection(patches, match_original=True)
-    ax.add_collection(collection)
-
-    # 保存为PNG（透明背景）
-    plt.savefig(
-        output_path,
-        format='png',
-        dpi=300,
-        bbox_inches='tight',
-        pad_inches=0,
-        transparent=True
-    )
-
-    # 清理资源
-    plt.close(fig)
 
 
 def create_polygon_patch(polygon, color: str) -> MplPolygon:

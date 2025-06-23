@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from typing import Optional, List, Type, Tuple, Any
 
+from pandas import DataFrame
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,20 +30,21 @@ class BaseGdfConverter:
         'shp': '.shp',
         'gpkg': '.gpkg',
         'kml': '.kml',
-        'geotiff': '.tif'
+        'geotiff': '.tif',
+        'excel': '.xlsx',
+        'csv': '.csv',
+        'txt': '.txt'
     }
 
     def __init__(self,
                  gdf: gpd.GeoDataFrame,
                  type_name: str,
                  attributes: Optional[List[str]] = None,
-                 custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 custom_output_path: Optional[str] = None):
         self.gdf = gdf
         self.type_name = type_name
         self.attributes = attributes or []
         self.custom_output_path = custom_output_path
-        self.kwargs = kwargs  # 其他可选参数
 
         # 验证属性字段是否存在
         self._validate_attributes()
@@ -85,6 +87,12 @@ class BaseGdfConverter:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"{self.base_name}_{timestamp}.{extension}"
 
+    @staticmethod
+    def _to_table_string(df: DataFrame) -> str:
+        table_str = ""
+        table_str += str(df)
+        return table_str
+
     def convert(self) -> Any:
         """执行转换操作，子类必须实现此方法"""
         raise NotImplementedError("子类必须实现convert方法")
@@ -107,7 +115,7 @@ class GdfToGeoJSONConverter(BaseGdfConverter):
                  type_name: str,
                  attributes: Optional[List[str]] = None,
                  custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 ):
         super().__init__(gdf, type_name, attributes, custom_output_path)
         self.attribute_count = None
         self.feature_count = None
@@ -155,8 +163,7 @@ class GdfToShapefileConverter(BaseGdfConverter):
                  gdf: gpd.GeoDataFrame,
                  type_name: str,
                  attributes: Optional[List[str]] = None,
-                 custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 custom_output_path: Optional[str] = None):
         super().__init__(gdf, type_name, attributes, custom_output_path)
         self.file_count = None
         self.attribute_count = None
@@ -211,7 +218,7 @@ class GdfToGeoPackageConverter(BaseGdfConverter):
                  type_name: str,
                  attributes: Optional[List[str]] = None,
                  custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 ):
         super().__init__(gdf, type_name, attributes, custom_output_path)
         self.attribute_count = None
         self.feature_count = None
@@ -260,7 +267,7 @@ class GdfToKMLConverter(BaseGdfConverter):
                  type_name: str,
                  attributes: Optional[List[str]] = None,
                  custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 ):
         super().__init__(gdf, type_name, attributes, custom_output_path)
         self.attribute_count = None
         self.feature_count = None
@@ -309,7 +316,7 @@ class GdfToGeoTIFFConverter(BaseGdfConverter):
                  type_name: str,
                  attributes: Optional[List[str]] = None,
                  custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 ):
         super().__init__(gdf, type_name, attributes, custom_output_path)
         self.attribute = None
         self.output_path = None
@@ -318,9 +325,9 @@ class GdfToGeoTIFFConverter(BaseGdfConverter):
     def convert(self):
         """执行GeoTIFF转换"""
         # 获取参数
-        resolution = self.kwargs.get('resolution', 10)  # 默认分辨率10米/像素
-        attribute = self.kwargs.get(self.attributes[0], None)  # 用于栅格化的属性
-        nodata = self.kwargs.get('nodata', -9999)  # 无数据值
+        resolution = 10  # 默认分辨率10米/像素
+        attribute = self.attributes[0]
+        nodata = -9999  # 无数据值
 
         # 获取地理范围
         minx, miny, maxx, maxy = self.get_bbox()
@@ -401,8 +408,7 @@ class GdfToPNGConverter(BaseGdfConverter):
                  gdf: gpd.GeoDataFrame,
                  type_name: str,
                  attributes: Optional[List[str]] = None,
-                 custom_output_path: Optional[str] = None,
-                 **kwargs):
+                 custom_output_path: Optional[str] = None):
         super().__init__(gdf, type_name, attributes, custom_output_path)
         self.png_path = None
         self.bbox = None
@@ -493,6 +499,148 @@ class GdfToPNGConverter(BaseGdfConverter):
         )
 
 
+class GdfToExcelConverter(BaseGdfConverter):
+    """将GeoDataFrame转换为Excel格式 (.xlsx)"""
+
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
+        output_dir = self._prepare_output_dir("Excels")
+        output_file = self._generate_output_filename("xlsx")
+        output_path = os.path.join(output_dir, output_file)
+
+        # 将几何列转换为WKT文本以便在Excel中显示
+        temp_df = self.gdf.copy()
+        if 'geometry' in temp_df.columns:
+            temp_df['geometry'] = temp_df['geometry'].apply(lambda geom: geom.wkt)
+
+        temp_df.to_excel(output_path, index=False)
+
+        feature_count = len(self.gdf)
+        attribute_count = len(self.gdf.columns) - 1
+
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
+        return output_path, feature_count, attribute_count
+
+    def result(self) -> str:
+        return (
+            f"Excel文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}"
+        )
+
+
+class GdfToCsvConverter(BaseGdfConverter):
+    """将GeoDataFrame转换为CSV格式 (.csv)"""
+
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
+        output_dir = self._prepare_output_dir("CSVs")
+        output_file = self._generate_output_filename("csv")
+        output_path = os.path.join(output_dir, output_file)
+
+        # 将几何列转换为WKT文本
+        temp_df = self.gdf.copy()
+        if 'geometry' in temp_df.columns:
+            temp_df['geometry'] = temp_df['geometry'].apply(lambda geom: geom.wkt)
+
+        temp_df.to_csv(output_path, index=False)
+
+        feature_count = len(self.gdf)
+        attribute_count = len(self.gdf.columns) - 1
+
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
+        return output_path, feature_count, attribute_count
+
+    def result(self) -> str:
+        return (
+            f"CSV文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}"
+        )
+
+
+class GdfToTxtConverter(BaseGdfConverter):
+    """将GeoDataFrame转换为文本表格格式 (.txt)"""
+
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
+        output_dir = self._prepare_output_dir("Texts")
+        output_file = self._generate_output_filename("txt")
+        output_path = os.path.join(output_dir, output_file)
+
+        # 使用基类的表格字符串转换方法
+        table_str = self._to_table_string(self.gdf)
+
+        with open(output_path, 'w') as f:
+            f.write(table_str)
+
+        feature_count = len(self.gdf)
+        attribute_count = len(self.gdf.columns) - 1
+
+        self.output_path = output_path
+        self.feature_count = feature_count
+        self.attribute_count = attribute_count
+        return output_path, feature_count, attribute_count
+
+    def result(self) -> str:
+        return (
+            f"文本文件已保存至: {self.output_path}\n"
+            f"要素数量: {self.feature_count}\n"
+            f"属性字段数量: {self.attribute_count}"
+        )
+
+
+class GdfToStrConverter(BaseGdfConverter):
+    """将GeoDataFrame转换为String字符串格式"""
+
+    def __init__(self,
+                 gdf: gpd.GeoDataFrame,
+                 type_name: str,
+                 attributes: Optional[List[str]] = None,
+                 custom_output_path: Optional[str] = None):
+        super().__init__(gdf, type_name, attributes, custom_output_path)
+        self.attribute_count = None
+        self.feature_count = None
+        self.output_path = None
+
+    def convert(self):
+        pass
+
+    def result(self) -> str:
+        return self._to_table_string(self.gdf)
+
+
 class ConverterFactory:
     """转换器工厂类，根据类型名称创建对应的转换器"""
 
@@ -503,7 +651,11 @@ class ConverterFactory:
         'shp': GdfToShapefileConverter,
         'gpkg': GdfToGeoPackageConverter,
         'kml': GdfToKMLConverter,
-        'geotiff': GdfToGeoTIFFConverter
+        'geotiff': GdfToGeoTIFFConverter,
+        'excel': GdfToExcelConverter,
+        'csv': GdfToCsvConverter,
+        'txt': GdfToTxtConverter,
+        'str': GdfToStrConverter
     }
 
     @classmethod

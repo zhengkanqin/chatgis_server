@@ -73,7 +73,12 @@ class QueryProcessor(BaseOperationProcessor):
         query_target = self.params.get('query_target', 'all')
         target_ids = self.params.get('target_ids', [])
 
-        return query_tool(gdf, query_target, target_ids, attributes)
+        query_gdf = query_tool(gdf, query_target, target_ids, attributes)
+
+        # 使用工厂创建转换器
+        converter = ConverterFactory.get_converter('str', query_gdf)
+
+        return converter.result()
 
 
 class BufferProcessor(BaseOperationProcessor):
@@ -123,8 +128,13 @@ class BufferQueryProcessor(BaseOperationProcessor):
         # 解构边界框坐标
         minx, miny, maxx, maxy = bbox
 
-        buffer_query_result = buffer_query_tool(self.gdf, buffer_create_ids, read_geographic_data(query_file_path), target_ids,
-                                                buffer_distance)
+        buffer_query_gdf = buffer_query_tool(self.gdf, buffer_create_ids, read_geographic_data(query_file_path),
+                                             target_ids,
+                                             buffer_distance)
+
+        # 使用工厂创建转换器
+        converter = ConverterFactory.get_converter('str', buffer_query_gdf)
+        buffer_query_result = converter.result()
 
         # 格式化结果字符串
         result = (
