@@ -391,6 +391,28 @@ async def cluster_analysis(
         return error(response)
 
 
+@tool()
+async def thiessen_polygon(
+        source: Union[str, Dict]
+):
+    """
+    生成泰森多边形：根据点要素创建泰森多边形。
+
+    参数:
+    - source: 待生成泰森多边形的点数据源，支持以下格式：
+        * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+        * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
+        * 图层引用(str): "[$layer]精确图层名[$layer]"
+    """
+    params={}
+
+    try:
+        return SpatialProcessorFactory.create_processor("thiessen_polygon", source, params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("空间聚类工具", error_obj=e)
+        response = handler.format_response()
+        return error(response)
+
 AnalysisTools = [
     read_file,
     geo_data_convert,

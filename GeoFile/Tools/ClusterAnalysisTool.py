@@ -301,9 +301,14 @@ class ClusterResultProcessor:
         algorithm_name = stats["algorithm"].upper()
 
         # 文件路径信息
-        result = f"聚类结果文件已生成：\n"
+        result = f"聚类结果文件已生成，增加了属性cluster以记录聚类：\n"
         result += f"  - GeoJSON: {geojson_path}\n"
         result += f"  - Shapefile: {shp_path}\n"
+
+        # 簇大小分布
+        result += "\n聚类值与聚类大小分布:\n"
+        for cluster_id, size in stats["cluster_sizes"].items():
+            result += f"  簇值 {cluster_id}: {size} 个要素\n"
 
         # 聚类算法信息
         result += f"聚类算法: {algorithm_name}\n"
@@ -312,11 +317,6 @@ class ClusterResultProcessor:
         # 噪声点信息（如果存在）
         if stats.get('noise_points', 0) > 0:
             result += f"噪声点数量: {stats['noise_points']}\n"
-
-        # 簇大小分布
-        result += "\n簇大小分布:\n"
-        for cluster_id, size in stats["cluster_sizes"].items():
-            result += f"  簇 {cluster_id}: {size} 个要素\n"
 
         # 轮廓系数
         if 'silhouette_score' in stats:

@@ -24,18 +24,18 @@ async def main():
     # print(gdf)
 
     # 测试转换操作（convert）
-    # convert_result = await ToolService.geo_data_convert.ainvoke({
-    #     "source": "GeoFile/AAATestFile/Shp/购物服务.shp",
-    #     "type_name": "geojson",
-    #     "attributes": []
-    # })
-    # print(json.dumps(convert_result, indent=2, ensure_ascii=False))
-
-    # 测试空间聚类操作（convert）
-    convert_result = await ToolService.cluster_analysis.ainvoke({
+    convert_result = await ToolService.geo_data_convert.ainvoke({
         "source": "GeoFile/AAATestFile/Shp/购物服务.shp",
+        "type_name": "str",
+        "attributes": []
     })
     print(json.dumps(convert_result, indent=2, ensure_ascii=False))
+
+    # 测试空间聚类操作（convert）
+    # convert_result = await ToolService.cluster_analysis.ainvoke({
+    #     "source": "GeoFile/AAATestFile/Shp/购物服务.shp",
+    # })
+    # print(json.dumps(convert_result, indent=2, ensure_ascii=False))
 
     # 测试属性查询操作（query）
     # query_result = await attribute_query.ainvoke({

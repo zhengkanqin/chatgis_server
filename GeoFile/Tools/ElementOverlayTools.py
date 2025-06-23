@@ -25,6 +25,9 @@ class BaseElementOverlay:
         join_attribute: 属性传递规则 ("ALL", "NO_FID", "ONLY_FID")
         tolerance: 坐标容差值
         """
+        self.main_fid = main_gdf.index.tolist() if hasattr(main_gdf, 'index') else []
+        self.overlay_fid = overlay_gdf.index.tolist() if hasattr(overlay_gdf, 'index') else []
+
         self.main_gdf = main_gdf
         self.overlay_gdf = overlay_gdf
         self.join_attribute = join_attribute
@@ -41,18 +44,29 @@ class BaseElementOverlay:
 
     def _handle_attributes(self):
         """根据join_attribute参数处理属性字段"""
+        # 添加真正的 FID 列
+        self.result_gdf['main_fid'] = self.result_gdf.index.map(
+            lambda i: self.main_fid[i] if i < len(self.main_fid) else None
+        )
+
+        # 如果叠加数据有 FID 信息
+        if self.overlay_fid:
+            self.result_gdf['overlay_fid'] = self.result_gdf.index.map(
+                lambda i: self.overlay_fid[i] if i < len(self.overlay_fid) else None
+            )
+
         if self.join_attribute == "ALL":
             return  # 保留所有属性
 
-        fid_columns = [col for col in self.result_gdf.columns
-                       if col.lower() == 'fid' or col.endswith('_fid')]
+        # 识别 FID 相关列
+        fid_columns = ['main_fid', 'overlay_fid']
 
         if self.join_attribute == "NO_FID":
             # 删除所有FID相关字段
             self.result_gdf = self.result_gdf.drop(columns=fid_columns)
 
         elif self.join_attribute == "ONLY_FID":
-            # 只保留FID字段
+            # 只保留FID字段和几何
             keep_cols = ['geometry'] + fid_columns
             self.result_gdf = self.result_gdf[keep_cols]
 

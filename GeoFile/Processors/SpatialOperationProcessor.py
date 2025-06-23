@@ -4,6 +4,7 @@
 
 支持空间查询等功能。
 """
+import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Union
 
@@ -11,8 +12,11 @@ import geopandas as gpd
 
 from GeoFile.Common.Message import success
 from GeoFile.Tools.ClusterAnalysisTool import ClusterFactory, ClusterResultProcessor
+from GeoFile.Tools.ElementOverlayTools import ElementOverlayFactory
+from GeoFile.Tools.Gdf2TypeTool import ConverterFactory
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
 from GeoFile.Tools.SpatialQueryTool import spatial_query_tool
+from GeoFile.Tools.VoronoiPolygonTool import create_voronoi_polygons
 
 
 class BaseOperationProcessor(ABC):
@@ -137,13 +141,56 @@ class ElementOverlayProcessor(BaseOperationProcessor):
         return result
 
 
+class ThiessenPolygonProcessor(BaseOperationProcessor):
+    """泰森多边形生成器"""
+
+    SUPPORTED_OPERATION = ['thiessen_polygon']
+
+    def core(self):
+        gdf = self.gdf
+
+        result_gdf = create_voronoi_polygons(gdf)
+
+        # 创建目录存储输出文件
+        output_dir = os.path.abspath(f"GeoFile/Result/_voronoi")
+        os.makedirs(output_dir, exist_ok=True)
+
+        # 生成GeoJSON
+        # 使用转换器工厂生成GeoJSON
+        converter = ConverterFactory.get_converter(
+            type_name='geojson',
+            gdf=result_gdf,
+            custom_output_path=output_dir
+        )
+        geojson_path, _, _ = converter.convert()
+
+        # 生成Shapefile
+        # 使用转换器工厂生成Shapefile
+        converter = ConverterFactory.get_converter(
+            type_name='shp',
+            gdf=result_gdf,
+            custom_output_path=output_dir
+        )
+        shp_path, _, _, _ = converter.convert()
+
+        # 格式化结果字符串
+        result = (
+            f"泰森多边形生成成功！\n"
+            f"多边形GeoJSON文件已保存至: {geojson_path}\n"
+            f"多边形SHP文件已保存至: {shp_path}\n"
+        )
+
+        return result
+
+
 class SpatialProcessorFactory:
     """文件操作器工厂"""
 
     OPERATION_PROCESSORS = {
         'spatial_query': SpatialQueryProcessor,
         'cluster_analysis': ClusterAnalysisProcessor,
-        'element_overlay': ElementOverlayProcessor
+        'element_overlay': ElementOverlayProcessor,
+        'thiessen_polygon': ThiessenPolygonProcessor
     }
 
     @classmethod
