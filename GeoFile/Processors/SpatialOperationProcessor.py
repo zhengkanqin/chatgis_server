@@ -15,6 +15,7 @@ from GeoFile.Tools.ClusterAnalysisTool import ClusterFactory, ClusterResultProce
 from GeoFile.Tools.ElementOverlayTools import ElementOverlayFactory
 from GeoFile.Tools.Gdf2TypeTool import ConverterFactory
 from GeoFile.Tools.GeographicObjectTool import read_geographic_data
+from GeoFile.Tools.ProximityTools import ProximityResultProcessor, ProximityFactory
 from GeoFile.Tools.SpatialQueryTool import spatial_query_tool
 from GeoFile.Tools.VoronoiPolygonTool import create_voronoi_polygons
 
@@ -131,14 +132,20 @@ class ElementOverlayProcessor(BaseOperationProcessor):
         if tolerance is not None:
             overlay_params['tolerance'] = tolerance
 
-        result = ElementOverlayFactory.get_element_overlay(
+        overlay = ElementOverlayFactory.get_element_overlay(
             operation=operation,
             main_gdf=gdf,
             overlay_gdf=overlay_gdf,
             **overlay_params
         )
 
-        return result
+        result_gdf = overlay.execute()
+
+        # 处理结果并生成输出
+        processor = ClusterResultProcessor(result_gdf, operation)
+        results = processor.generate_outputs()
+
+        return results.get("stats")
 
 
 class ThiessenPolygonProcessor(BaseOperationProcessor):
@@ -156,7 +163,6 @@ class ThiessenPolygonProcessor(BaseOperationProcessor):
         os.makedirs(output_dir, exist_ok=True)
 
         # 生成GeoJSON
-        # 使用转换器工厂生成GeoJSON
         converter = ConverterFactory.get_converter(
             type_name='geojson',
             gdf=result_gdf,
@@ -165,7 +171,6 @@ class ThiessenPolygonProcessor(BaseOperationProcessor):
         geojson_path, _, _ = converter.convert()
 
         # 生成Shapefile
-        # 使用转换器工厂生成Shapefile
         converter = ConverterFactory.get_converter(
             type_name='shp',
             gdf=result_gdf,
@@ -183,6 +188,50 @@ class ThiessenPolygonProcessor(BaseOperationProcessor):
         return result
 
 
+class ProximityProcessor(BaseOperationProcessor):
+    """近邻分析处理器"""
+
+    SUPPORTED_OPERATION = ['proximity_analysis']
+
+    def core(self):
+        main_gdf = self.gdf
+
+        # 读取邻近要素数据（如果提供）
+        near_gdf = read_geographic_data(self.params.get("near_source")) if self.params.get("near_source") else None
+        max_distance = self.params.get("max_distance")
+        include_attributes = self.params.get("include_attributes")
+        buffer_distance = self.params.get("buffer_distance")
+
+        # 准备算法特定参数
+        proximity_params = {}
+        if max_distance is not None:
+            proximity_params['max_distance'] = max_distance
+        if include_attributes is not None:
+            proximity_params['include_attributes'] = include_attributes
+        if buffer_distance is not None:
+            proximity_params['buffer_distance'] = buffer_distance
+
+        # 获取邻近分析工具
+        tool = ProximityFactory.get_proximity_tool(
+            tool_name=self.params.get("tool_name"),
+            main_gdf=main_gdf,
+            near_gdf=near_gdf,
+            **proximity_params
+        )
+
+        # 执行分析
+        result = tool.execute()
+
+        # 获取统计信息
+        stats = tool.get_result_stats()
+
+        # 处理结果
+        processor = ProximityResultProcessor(result, stats, self.params.get("tool_name"))
+        outputs = processor.generate_outputs()
+
+        return outputs.get("stats")
+
+
 class SpatialProcessorFactory:
     """文件操作器工厂"""
 
@@ -190,7 +239,8 @@ class SpatialProcessorFactory:
         'spatial_query': SpatialQueryProcessor,
         'cluster_analysis': ClusterAnalysisProcessor,
         'element_overlay': ElementOverlayProcessor,
-        'thiessen_polygon': ThiessenPolygonProcessor
+        'thiessen_polygon': ThiessenPolygonProcessor,
+        'proximity_analysis': ProximityProcessor
     }
 
     @classmethod

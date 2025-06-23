@@ -404,14 +404,70 @@ async def thiessen_polygon(
         * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
         * 图层引用(str): "[$layer]精确图层名[$layer]"
     """
-    params={}
+    params = {}
 
     try:
         return SpatialProcessorFactory.create_processor("thiessen_polygon", source, params)
     except Exception as e:
-        handler = UnifiedErrorFactory.get_handler("空间聚类工具", error_obj=e)
+        handler = UnifiedErrorFactory.get_handler("泰森多边形工具", error_obj=e)
         response = handler.format_response()
         return error(response)
+
+
+@tool()
+async def proximity_analysis(
+        tool_name: str,
+        main_source: Union[str, Dict],
+        near_source: Optional[Union[str, Dict]] = None,
+        max_distance: Optional[float] = None,
+        include_attributes: Optional[bool] = True,
+        buffer_distance: Optional[float] = None
+):
+    """
+    执行邻近分析：包含近邻分析，面邻域，生成近邻表，点距离等功能
+
+    参数:
+    - tool_name: 分析工具名称，支持以下类型:
+        "nearest_neighbor" - 近邻分析：计算每个要素到其最近邻要素的距离
+        "polygon_neighbors" - 面邻域：识别相邻的面要素
+        "generate_near_table" - 生成近邻表：计算所有要素对之间的距离
+        "point_distance" - 点距离：计算两点数据集之间的距离
+
+    - main_source: 主输入数据源，支持以下格式：
+        * 文件路径(str): SHP/GeoJSON/GPKG等地理文件路径
+        * GeoJSON对象(str或Dict): {'type': 'FeatureCollection', ...}
+        * 图层引用(str): "[$layer]精确图层名[$layer]"
+
+    - near_source: 邻近要素数据源（可选），格式同main_source
+        * 对于"nearest_neighbor"和"generate_near_table"，可指定不同的邻近要素数据集
+        * 对于"polygon_neighbors"和"point_distance"，通常使用同一个数据集
+
+    - max_distance: 最大搜索距离（可选）
+        * 单位与数据源坐标系一致（投影坐标系为米，地理坐标系为度）
+        * 应用于"generate_near_table"和"point_distance"工具
+
+    - include_attributes: 是否在结果中包含属性字段（可选，默认为True）
+        * 应用于"generate_near_table"和"point_distance"工具
+
+    - buffer_distance: 缓冲区距离（仅用于面邻域分析）
+        * 单位与数据源坐标系一致
+        * 用于检测面要素之间的邻接关系
+    """
+    params = {
+        "tool_name": tool_name,
+        "near_source": near_source,
+        "max_distance": max_distance,
+        "include_attributes": include_attributes,
+        "buffer_distance": buffer_distance
+    }
+
+    try:
+        return SpatialProcessorFactory.create_processor("proximity_analysis", main_source, params)
+    except Exception as e:
+        handler = UnifiedErrorFactory.get_handler("泰森多边形工具", error_obj=e)
+        response = handler.format_response()
+        return error(response)
+
 
 AnalysisTools = [
     read_file,
@@ -420,5 +476,7 @@ AnalysisTools = [
     buffer_query,
     element_overlay_analysis,
     spatial_query,
-    cluster_analysis
+    cluster_analysis,
+    thiessen_polygon,
+    proximity_analysis
 ]
