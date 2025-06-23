@@ -179,7 +179,7 @@ def ReviseSubtask(index: int, description: str = "", sender: str = ""):
         if sender:
             task.sender = sender
         UpdatePlanToUI()
-        return System_plan.GetAllSubtask_()
+        return "任务修改成功，请执行。"
     else:
         return f" 无效的任务索引：{index}"
 

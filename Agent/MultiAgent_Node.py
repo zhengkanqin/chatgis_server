@@ -7,7 +7,8 @@ from AgentTools.GISPlan import DoAddSubtask, DoDeleteSubtask, GetAllSubtaskInfo,
     FailCurrentSubtask, SetTotalThinking, SetUserGoal, AreAllTasksFinished, GetCurrentSender, GetCurrentSubTask, \
     GetUpdateTask, GetALlSubTaskBySystem, SetUpdateTask
 from AgentTools.baidumaptools import map_directions, map_reverse_geocode, map_geocode
-from GeoFile.Service.ToolService import read_file, geo_data_convert, attribute_query, buffer_query, buffer_create,spatial_query
+from GeoFile.Service.ToolService import read_file, geo_data_convert, attribute_query, buffer_query, buffer_create, \
+    spatial_query, cluster_analysis
 from AgentTools.RAG import Query_GeoFile, Query_Knowledge
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
@@ -42,6 +43,7 @@ analysis_tools = [
     read_file,
     geo_data_convert,
     spatial_query,
+    cluster_analysis
 ]
 analysis_llm = ChatOpenAI(model=system_config["对话大模型名称"], api_key=system_config["对话大模型密钥"],base_url=system_config["对话大模型地址"], temperature=0.4).bind_tools(analysis_tools)
 #------------------------------------------------------------
