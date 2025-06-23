@@ -57,7 +57,7 @@ class GISPlan:
 
     def GetCurrentSubTask_(self) -> str:
 
-        res_md = "## 📦 当前资源列表\n"
+        res_md = "##  当前资源列表\n"
         if self.Resource:
             for i, res in enumerate(self.Resource, 1):
                 res_md += f"{i}. {res}\n"
@@ -66,7 +66,7 @@ class GISPlan:
 
         for task in self.SubTask:
             if not task.state:
-                md = f"## ⏳ 当前执行子任务\n"
+                md = f"##  当前执行子任务\n"
                 md += f"- **任务描述**：{task.description}\n"
                 md += res_md
                 return md
@@ -98,16 +98,16 @@ class GISPlan:
         else:
             res_md += "暂无资源\n"
 
-        md = f"## 🧠 总体计划\n{self.TotalThinking}\n\n"
-        md += "## 🧩 子任务列表\n"
+        md = f"##  总体计划\n{self.TotalThinking}\n\n"
+        md += "##  子任务列表\n"
         if not self.SubTask:
             md += "暂无子任务"
         else:
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
-                md += f"- 👤 委托者: {task.sender}\n"
-                md += f"- 💬 反馈: {task.feedback}\n"
-                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n\n"
+                md += f"-  委托者: {task.sender}\n"
+                md += f"-  反馈: {task.feedback}\n"
+                md += f"-  状态: {' 完成' if task.state else ' 未完成'}\n\n"
         md +=res_md
         return md
 
@@ -115,12 +115,12 @@ class GISPlan:
         if not self.SubTask:
             return "暂无子任务"
         else:
-            md = "## 🧩 当前子任务列表\n"
+            md = "##  当前子任务列表\n"
             for idx, task in enumerate(self.SubTask, 1):
                 md += f"### {idx}. {task.description}\n"
-                md += f"- 👤 委托者: {task.sender}\n"
-                md += f"- 💬 反馈: {task.feedback}\n"
-                md += f"- 🚦 状态: {'✅ 完成' if task.state else '🕗 未完成'}\n\n"
+                md += f"-  委托者: {task.sender}\n"
+                md += f"-  反馈: {task.feedback}\n"
+                md += f"-  状态: {' 完成' if task.state else ' 未完成'}\n\n"
             return md
 
 
@@ -181,7 +181,7 @@ def ReviseSubtask(index: int, description: str = "", sender: str = ""):
         UpdatePlanToUI()
         return System_plan.GetAllSubtask_()
     else:
-        return f"❌ 无效的任务索引：{index}"
+        return f" 无效的任务索引：{index}"
 
 @tool
 def FinishCurrentSubtask(resource: str = "", feedback: str = ""):
