@@ -2,7 +2,6 @@ import json
 import os
 
 from GeoFile.Service.ToolService import read_file, attribute_query, buffer_query, geo_data_convert,spatial_query
-from GeoFile.Tools.BufferTool import create_buffer_png
 from AgentTools.RAG import Query_GeoFile
 from AgentTools.baidumaptools import map_reverse_geocode
 from connection_manager import manager
